@@ -4,10 +4,10 @@
 	<property name="cli.packager.name" value="cfmlprojects.org" />
 	<property name="cli.packager.email" value="cfml@cfmlprojects.org" />
 	<property name="cli.use.pack200" value="true" />
-	<property name="railo.version.long" value="4.0.1.001" />
+	<property name="railo.version.long" value="4.0.1.006" />
 	<property name="mvn.repo.id" value="cfdistro.repo.local" />
-	<property name="mvn.jre.version" value="1.7.0_07" />
-	<property name="mvn.jre.version" value="1.6.0_34" />
+	<property name="mvn.jre.version" value="1.7.0_09" />
+	<property name="mvn.jre.version" value="1.6.0_37" />
     <property name="maven.repo.local" location="${cfdistro.basedir}/artifacts" />
 	<property name="rpm.repo" value="${maven.repo.local}/RPMS/noarch" />
 
