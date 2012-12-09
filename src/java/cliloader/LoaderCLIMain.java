@@ -60,10 +60,11 @@ public class LoaderCLIMain {
 		
 		if(config.get("?") != null || args.length == 0) {
 			System.out.println("USAGE: railo /path/to/script [-libs=/path/to/libs/dir -webroot=/path/to/web -uri=/webroot/script/path -config-server=/path/to/dir -config-web=/path/to/dir] [-form=name=susi -cgi=user_agent=urs]");
-			System.out.println("Ex: railo test.cfm");
-			System.out.println("Or for server mode: railo -server --port=8088");
-			System.out.println("And to update libs after updating binary: railo -update");
-			Thread.sleep(3000);
+			System.out.println("Ex: 'railo test.cfm'");
+			System.out.println("Or for shell/REPL mode: 'railo -shell' or 'railo -repl'");
+			System.out.println("Or for server mode: 'railo -server --port=8088'");
+			System.out.println("And to update libs after updating binary: 'railo -update'");
+			Thread.sleep(1000);
 			System.exit(0);
 		}
 		
