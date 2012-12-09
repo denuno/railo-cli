@@ -1,52 +1,89 @@
+<cfsilent>
+<cfset _shellprops = { version:'0.1' } >
+<cfsetting requesttimeout="9999" />
+<cfsavecontent variable="_shellprops.help">Live evaluation (with GNU Readline-ish input control)
+	Empty line displayes and executes current buffer.  'version' lists version, 'clear' clears buffer, 'ls' and 'dir' list files, 'exit', 'quit', 'q' exits.  There is tab-completion, hit tab to see all.
+	Examples:
+		3+4+5
+		server.railo.version
+		serializeJSON(server.coldfusion)
+</cfsavecontent>
 <cfscript>
 	System = createObject("java", "java.lang.System");
-	InputStreamReader = createObject("java","java.io.InputStreamReader");
-	BufferedReader = createObject("java","java.io.BufferedReader");
-	br = BufferedReader.init(InputStreamReader.init(System.in));
 	keepRunning = true;
 	script = "";
-	while (keepRunning) {
-		systemOutput("cfml: ");
-		while(isNull(inLine)) {
-			inLine = br.readLine();
-		}
-		args = inLine.split(" ");
-		switch(args[1]) {
-			case "clear":
-				script = "";
-				break;
+	systemOutput(_shellprops.help);
+	jline();
+    function jline() {
+        var mask = "*";
+        var trigger = "su";
+        var reader = createObject("java","jline.ConsoleReader");
+        reader.setBellEnabled(false);
+        //reader.setDebug(new PrintWriter(new FileWriter("writer.debug", true)));
+        var completors = createObject("java","java.util.LinkedList");
+        completors.add(createObject("java","jline.SimpleCompletor").init(
+        	["clear","exit","ls","dir","version","server.coldfusion.productname","server.railo.version"]
+       	));
 
-			case "dir": case "ls":
-				dir = isNull(args[2]) ? "." : args[2];
-				for(dir in directoryList(dir)) {
-					systemOutput(dir);
-				}
-				break;
+        reader.addCompletor(createObject("java","jline.ArgumentCompletor").init(completors));
 
-			case "exit": case "quit": case "q":
-				systemOutput("Peace out!");
-				keepRunning = false;
-				break;
+        var line ="";
+        var out = createObject("java","java.io.PrintWriter").init(System.out);
 
-			case "":
-				try{
-					systemOutput(script);
-					systemOutput(evaluate(script));
-				} catch (any e) {
-					systemOutput("error: " & e.message);
-				}
-				break;
+        while (keepRunning) {
+			systemOutput(chr(10));
+        	line = reader.readLine("prompt> ");
+            out.println("======>" & line);
+            out.flush();
+            // If we input the special word then we will mask
+            // the next line.
+            if ((!isNull(trigger)) && (line.compareTo(trigger) == 0)) {
+                line = reader.readLine("password> ", javacast("char",mask));
+            }
+			var args = line.split(" ");
+			switch(args[1]) {
+				case "clear":
+					script = "";
+					break;
 
-			default:
-				try{
-					systemOutput(inLine & " = " & evaluate(inLine));
-					script &= inLine;
-				} catch (any e) {
-					systemOutput("error: " & e.message);
-				}
-				break;
+				case "version":
+					systemOutput(_shellprops.version & chr(10));
+					break;
 
-		}
-		inLine = javaCast("null","");
-	}
+				case "dir": case "ls":
+					dir = isNull(args[2]) ? "." : args[2];
+					for(dir in directoryList(dir)) {
+						systemOutput(dir & chr(10)) ;
+					}
+					break;
+
+				case "exit": case "quit": case "q":
+					systemOutput("Peace out!");
+					keepRunning = false;
+					break;
+
+				case "":
+					try{
+						systemOutput(script);
+						systemOutput(evaluate(script));
+					} catch (any e) {
+						systemOutput("error: " & e.message & chr(10));
+					}
+					break;
+
+				default:
+					try{
+						systemOutput(line & " = " & evaluate(line) & chr(10));
+						script &= line  & chr(10);
+					} catch (any e) {
+						systemOutput("error: " & e.message & chr(10));
+					}
+					break;
+
+			}
+
+        }
+    }
+
 </cfscript>
+</cfsilent>

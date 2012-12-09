@@ -1,6 +1,6 @@
 <project name="build-cli" default="build.cli" xmlns:antcontrib="antlib:net.sf.antcontrib" basedir=".">
 
-	<property name="cli.version" value="0.1.2" />
+	<property name="cli.version" value="0.2.3" />
 	<property name="cli.packager.name" value="cfmlprojects.org" />
 	<property name="cli.packager.email" value="cfml@cfmlprojects.org" />
 	<property name="cli.use.pack200" value="true" />
@@ -12,7 +12,7 @@
 	<property name="rpm.repo" value="${maven.repo.local}/RPMS/noarch" />
 
 	<target name="build.cli" description="creates an jar with the libs cli">
-		<antcontrib:var name="cli.version" value="${cli.version}.${railo.version.long}" />
+		<antcontrib:var name="cli.version" value="${cli.version}-${railo.version.long}" />
 		<version-splitter version="${railo.version.long}" property="railo.version" bump="" />
 		<property name="runcli.jar.file" value="${dist.dir}/cli/railo-cli.jar"/>
    		<delete dir="${dist.dir}/cli" />
@@ -29,7 +29,7 @@
 		<zip destfile="${temp.dir}/cli/${jetty-runner.jar}" level="9">
 			<fileset dir="${temp.dir}/cli/jetty" /> 
 		</zip>
-		<pom-and-deploy pomid="railo.war.pom" packaging="war" artifact="${temp.dir}/cli/${jetty-runner.jar}"
+		<pom-and-deploy pomid="railo.war.pom" packaging="war" artifact="${temp.dir}/cli/${jetty-runner.jar}" buildtype="release"
 		 groupId="org.eclipse.jetty" artifactId="jetty-runner-noasm" version="${jetty-runner.version}" name="jetty-runner-noasm"/>
 				
    		<delete dir="${temp.dir}/cli/jetty" />
@@ -46,6 +46,8 @@
         	compliance="${railo.javac.compiler}" classpath="${toString:classpath}" />
 		<!-- icon for cli -->
         <copy file="${src.dir}/resources/railo.png" todir="${temp.dir}/cli/bin/railocli" />
+        <copy file="${src.dir}/resources/jline-1.0.jar" todir="${railo.lib.dir}" />
+        <copy file="${src.dir}/cfml/cli/shell.cfm" todir="${railo.lib.dir}" />
 		<!-- use same icon for runwar -->
         <zip destfile="${temp.dir}/cli/runwar.jar" update="true" level="9">
         	<zipfileset file="${temp.dir}/cli/bin/railocli/railo.png" fullpath="runwar/icon.png" />
@@ -86,6 +88,7 @@
 				</copy>
 				<packjars dir="${temp.dir}/packlibs" packdir="${temp.dir}/packlibs/packed"/>
 				<zip destfile="${temp.dir}/cli/libs.zip">
+		            <fileset file="${railo.lib.dir}/shell.cfm"/>
 			        <fileset dir="${temp.dir}/packlibs/packed"/>
 				</zip>
 				<delete dir="${temp.dir}/packlibs" />
@@ -94,6 +97,7 @@
 				<zip destfile="${temp.dir}/cli/libs.zip">
 			        <fileset dir="${railo.lib.dir}">
 			            <include name="**/*.jar"/>
+			            <include name="**/shell.cfm"/>
 			            <exclude name="**/railo-loader.jar"/>
 			            <exclude name="**/javax.servlet.jar"/>
 			        </fileset>
@@ -166,7 +170,7 @@
 	        <fileset file="${dist.dir}/cli/railo" />
 			<zipfileset file="${src.dir}/cfml/cli/shell.cfm" prefix="" />
 		</zip>
-		<pom-and-deploy pomid="cli-jre.pom" packaging="pom"
+		<pom-and-deploy pomid="cli-jre.pom" packaging="pom" buildtype="${mvn.type}"
 		 groupId="org.getrailo" artifactId="railo.cli.jre" version="${cli.version}" name="railo.cli.jre">
 			<attachments>
         		<attach file="${dist.dir}/cli/cli-jre-win32.zip" type="zip" classifier="win32"/>
@@ -218,7 +222,7 @@ cd $reldir/build
 	        <fileset file="${dist.dir}/cli/railo" />
 	        <zipfileset dir="${temp.dir}/express/webroot" prefix="webroot/" />
 		</zip>
-		<pom-and-deploy pomid="cli-express.pom" packaging="pom"
+		<pom-and-deploy pomid="cli-express.pom" packaging="pom" buildtype="${mvn.type}"
 		 groupId="org.getrailo" artifactId="railo.cli.express" version="${cli.version}" name="railo.cli.express">
 			<attachments>
         		<attach file="${dist.dir}/express/cli-express-jre-win32.zip" type="zip" classifier="win32"/>
@@ -231,7 +235,7 @@ cd $reldir/build
  	</target>
 
  	<target name="build.cli.mvn" depends="build.cli.rpm,build.cli.deb,build.cli.exe">
-		<pom-and-deploy pomid="cli.pom" packaging="pom"
+		<pom-and-deploy pomid="cli.pom" packaging="pom" buildtype="${mvn.type}"
 			groupId="org.getrailo" artifactId="railo.cli" version="${cli.version}"
 			name="railo.cli">
 			<attachments>

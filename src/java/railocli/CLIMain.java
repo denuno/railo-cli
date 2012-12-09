@@ -59,31 +59,33 @@ public class CLIMain {
 		String strRoot=config.get("webroot");
 		File root;
 		if(Util.isEmpty(strRoot,true)) {
-			root=new File("./").getCanonicalFile();
-			config.put("webroot",root.getPath());
+			//root=new File("./").getCanonicalFile();
+			root=new File("/").getCanonicalFile();
 		} else {
 			root=new File(strRoot);
 		}
+		config.put("webroot",root.getPath());
 		//root.mkdirs();
 
 		String strServerroot=config.get("server-config");
 		File serverRoot;
 		if(Util.isEmpty(strServerroot,true)) {
-			serverRoot=new File(libDir,"server");
-			config.put("webroot",root.getPath());
+			serverRoot=new File(libDir.getParentFile(),"server");
 			//serverRoot=libDir;
 		} else {
 			serverRoot=new File(strServerroot);
 		}
+		config.put("server-config", serverRoot.getAbsolutePath());
 		//serverRoot.mkdirs();
 		
 		String strWebroot=config.get("web-config");
-		File webRoot;
+		File webConfig;
 		if(Util.isEmpty(strWebroot,true)) {
-			webRoot=new File(libDir,"server/railo-web");
+			webConfig=new File(libDir.getParentFile(),"server/railo-web");
 		} else {
-			webRoot=new File(strWebroot);
+			webConfig=new File(strWebroot);
 		}
+		config.put("web-config", webConfig.getAbsolutePath());
 		//webRoot.mkdirs();
 
 		// if no uri arg, use first non -dashed arg
@@ -94,10 +96,14 @@ public class CLIMain {
 				raw=args[i].trim();
 				if(raw.length() == 0) continue;
 				if(!raw.startsWith("-")) {
+					raw = new File(raw).getCanonicalFile().getPath();
 					config.put("uri",raw);
 					break;
 				}
 			}
+		}
+		if(config.get("repl") != null || config.get("shell") != null) {
+				config.put("uri",libDir + "/shell.cfm");
 		}
 		// hack to prevent . being picked up as the system path (jacob.x.dll)
 		if(System.getProperty("java.library.path") == null) {
@@ -119,7 +125,9 @@ public class CLIMain {
             catch(Exception e) { /* e.printStackTrace(); */ }
         }
 
-		
+		if(debug) {
+			System.out.println("Config:" + config);
+		}
 		// servletNane
 		String servletName=config.get("servlet-name");
 		if(Util.isEmpty(servletName,true))servletName="CFMLServlet";
@@ -127,9 +135,9 @@ public class CLIMain {
 		Map<String,Object> attributes=new HashMap<String, Object>();
 		Map<String, String> initParameters=new HashMap<String, String>();
 		initParameters.put("railo-server-directory", serverRoot.getAbsolutePath());
-		initParameters.put("configuration", webRoot.getAbsolutePath());
+		initParameters.put("configuration", webConfig.getAbsolutePath());
 		
-		CLIContext servletContext = new CLIContext(root, webRoot, attributes, initParameters, 1, 0);
+		CLIContext servletContext = new CLIContext(root, webConfig, attributes, initParameters, 1, 0);
 		ServletConfigImpl servletConfig = new ServletConfigImpl(servletContext, servletName);
 		PrintStream printStream = new PrintStream(new ByteArrayOutputStream());
 		PrintStream origOut = System.out;
