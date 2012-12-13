@@ -2,11 +2,13 @@
 <cfset _shellprops = { version:'0.1' } >
 <cfsetting requesttimeout="9999" />
 <cfsavecontent variable="_shellprops.help">Live evaluation (with GNU Readline-ish input control)
-	Empty line displayes and executes current buffer.  'version' lists version, 'clear' clears buffer, 'ls' and 'dir' list files, 'exit', 'quit', 'q' exits.  There is tab-completion, hit tab to see all.
+	Empty line displays and evaluates current buffer.  'version' lists version, 'clear' clears buffer, 'ls' and 'dir' list files, 'exit', 'quit', 'q' exits.  There is tab-completion, hit tab to see all.
 	Examples:
-		3+4+5
+		wee=3+4+5
+		foo="bar"
+		"re" & foo
 		server.railo.version
-		serializeJSON(server.coldfusion)
+		serialize(server.coldfusion)
 </cfsavecontent>
 <cfscript>
 	System = createObject("java", "java.lang.System");

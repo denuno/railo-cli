@@ -13,6 +13,8 @@ import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
@@ -28,34 +30,45 @@ public class LoaderCLIMain {
 		Boolean debug = false, updateLibs = false;
 		Boolean startServer = false;
 		Boolean background = false;
-		File currentDir;
-		String userHome = System.getProperty("user.home");
-		if(userHome != null) {
-			currentDir = new File(userHome + "/.railo/");
-			if(!currentDir.exists())
-				System.out.println("Configuring "+ userHome + "/.railo/" + " (change with -lib=/path/to/dir)");
-			currentDir.mkdir();
+		File railo_home;
+		Map<String, String> env = System.getenv();
+		if (config.get("railo_home") != null) {
+			railo_home = new File(config.get("railo_home"));
+			args = removeElement(args,"-railo_home");
+		} else if (System.getProperty("RAILO_HOME") != null) {
+			railo_home = new File(System.getProperty("RAILO_HOME"));
+		} else if (env.get("RAILO_HOME") != null) {
+			railo_home = new File(env.get("RAILO_HOME"));
 		} else {
-			currentDir = new File(LoaderCLIMain.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getParentFile();
+			String userHome = System.getProperty("user.home");
+			if(userHome != null) {
+				railo_home = new File(userHome + "/.railo/");
+			} else {
+				railo_home = new File(LoaderCLIMain.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getParentFile();
+			}
 		}
-		//System.out.println(currentDir.getPath());
-		File libDir=new File(currentDir,"lib").getCanonicalFile();
+		if(!railo_home.exists()) {
+			System.out.println("Configuring Railo home: "+ railo_home + " (change with -lib=/path/to/dir)");
+			railo_home.mkdir();
+		}
+		//System.out.println(railo_home.getPath());
+		File libDir=new File(railo_home,"lib").getCanonicalFile();
 		
 		// debug
 		if(config.get("debug") != null) {
 			debug = true;
-			System.out.println("Using configuration in "+ userHome + "/.railo/" + " (change with -lib=/path/to/dir)");
+			System.out.println("Using configuration in "+ railo_home + " (change with -lib=/path/to/dir)");
 		}
 		// update/overwrite libs
 		if(config.get("update") != null) {
 			System.out.println("updating libs");
 			updateLibs = true;
-			args = removeElementThenAdd(args,"-update","");
+			args = removeElement(args,"-update");
 		}
 		// background
 		if(config.get("background") != null) {
 			background = true;
-			args = removeElementThenAdd(args,"-background","");
+			args = removeElement(args,"-background");
 		}
 		
 		if(config.get("?") != null || args.length == 0) {
@@ -72,6 +85,7 @@ public class LoaderCLIMain {
 		String strLibs=config.get("lib");
 		if(strLibs != null && strLibs.length() != 0) {
 			libDir=new File(strLibs);
+			args = removeElementThenAdd(args,"-lib=","");
 		}
 
 		String strStart=config.get("server");
@@ -85,7 +99,8 @@ public class LoaderCLIMain {
 
 		if(debug) System.out.println("lib dir: " + libDir);
 
-		if (!libDir.exists() || updateLibs) {
+		if (!libDir.exists() || libDir.listFiles(new ExtFilter()).length < 2 
+				|| updateLibs) {
 			libDir.mkdir();
 			URL resource = classLoader.getResource(ZIP_PATH);
 			if (resource == null) {
@@ -207,10 +222,22 @@ public class LoaderCLIMain {
         
 	}
 	
+	public static String[] removeElement(String[] input, String deleteMe) {
+		final List<String> list =  new ArrayList<String>();
+		Collections.addAll(list, input);
+		for(String item: input) {
+	        if(item.startsWith(deleteMe)) {
+	        	list.remove(item);
+	        }
+		}
+		input = list.toArray(new String[list.size()]);
+		return input;
+	}
+	
 	public static String[] removeElementThenAdd(String[] input, String deleteMe, String addList) {
 	    List<String> result = new LinkedList<String>();
 	    for(String item : input)
-	        if(!deleteMe.equals(item))
+	        if(!item.startsWith(deleteMe))
 	            result.add(item);
 
 	    for(String item : addList.split(" "))
