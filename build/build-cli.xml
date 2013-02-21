@@ -1,13 +1,14 @@
 <project name="build-cli" default="build.cli" xmlns:antcontrib="antlib:net.sf.antcontrib" basedir=".">
 
-	<property name="cli.version" value="0.2.4" />
+	<property name="cli.version" value="0.2.6" />
 	<property name="cli.packager.name" value="cfmlprojects.org" />
 	<property name="cli.packager.email" value="cfml@cfmlprojects.org" />
 	<property name="cli.use.pack200" value="true" />
-	<property name="railo.version.long" value="4.0.2.002" />
+	<property name="railo.version.long" value="4.0.3.006" />
 	<property name="mvn.repo.id" value="cfdistro.repo.local" />
-	<property name="mvn.jre.version" value="1.7.0_09" />
-	<property name="mvn.jre.version" value="1.6.0_37" />
+	<property name="mvn.jre.7.version" value="1.7.0_15" />
+	<property name="mvn.jre.6.version" value="1.6.0_41" />
+	<property name="mvn.jre.version" value="${mvn.jre.7.version}" />
     <property name="maven.repo.local" location="${cfdistro.basedir}/artifacts" />
 	<property name="rpm.repo" value="${maven.repo.local}/RPMS/noarch" />
 
@@ -183,57 +184,65 @@
  	</target>
 
  	<target name="build.cli.express" depends="build.cli">
- 		<delete dir="${temp.dir}/express" />
- 		<mkdir dir="${temp.dir}/express" />
- 		<mkdir dir="${dist.dir}/express" />
- 		<mkdir dir="${temp.dir}/express/webroot" />
- 		<echo message="bundling ${mvn.jre.version} jre" />
- 		<echo file="${temp.dir}/express/start.bat">%CD%\railo -server -background --port 8888 --war %CD%\webroot --open-browser true --open-url /</echo>
- 		<echo file="${temp.dir}/express/start.cmd">#!/bin/bash
+ 		<build-cli-express jre.version="${mvn.jre.6.version}" />
+ 		<build-cli-express jre.version="${mvn.jre.7.version}" />
+ 	</target>
+
+	<macrodef name="build-cli-express">
+		<attribute name="jre.version" />
+		<sequential>
+	 		<delete dir="${temp.dir}/express" />
+	 		<mkdir dir="${temp.dir}/express" />
+	 		<mkdir dir="${dist.dir}/express" />
+	 		<mkdir dir="${temp.dir}/express/webroot" />
+	 		<echo message="bundling @{jre.version} jre" />
+	 		<echo file="${temp.dir}/express/start.bat">%CD%\railo -server -background --port 8888 --war %CD%\webroot --open-browser true --open-url /</echo>
+	 		<echo file="${temp.dir}/express/start.cmd">#!/bin/bash
 reldir=`dirname $0`
 cd $reldir/build
 ./railo -server -background --port 8888 --war %CD%\webroot --open-browser true --open-url /
 </echo>
- 		<echo file="${temp.dir}/express/webroot/index.cfm"><![CDATA[<cfoutput><h2>Welcome to Railo!</h2><cfdump var="#server#"/></cfoutput>]]></echo>
-		<zip destfile="${dist.dir}/express/cli-express-jre-win32.zip">
-			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-win32.zip"/>
-	        <fileset file="${dist.dir}/cli/railo.exe" />
-	        <fileset file="${temp.dir}/express/start.bat" />
-	        <zipfileset dir="${temp.dir}/express/webroot" prefix="webroot/" />
-		</zip>
-		<zip destfile="${dist.dir}/express/cli-express-jre-win64.zip">
-			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-win64.zip"/>
-	        <fileset file="${dist.dir}/cli/railo.exe" />
-	        <fileset file="${temp.dir}/express/start.bat" />
-	        <zipfileset dir="${temp.dir}/express/webroot" prefix="webroot/" />
-		</zip>
-		<zip destfile="${dist.dir}/express/cli-express-jre-linux32.zip">
-			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-linux32.zip"/>
-	        <fileset file="${dist.dir}/cli/railo" />
-	        <zipfileset dir="${temp.dir}/express/webroot" prefix="webroot/" />
-		</zip>
-		<zip destfile="${dist.dir}/express/cli-express-jre-linux64.zip">
-			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-linux64.zip"/>
-	        <fileset file="${dist.dir}/cli/railo" />
-	        <zipfileset dir="${temp.dir}/express/webroot" prefix="webroot/" />
-		</zip>
-		<zip destfile="${dist.dir}/express/cli-express-jre-darwin64.zip">
-			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-darwin64.zip"/>
-	        <fileset file="${dist.dir}/cli/railo" />
-	        <zipfileset dir="${temp.dir}/express/webroot" prefix="webroot/" />
-		</zip>
-		<pom-and-deploy pomid="cli-express.pom" packaging="pom" buildtype="${mvn.type}"
-		 groupId="org.getrailo" artifactId="railo.cli.express" version="${cli.version}" name="railo.cli.express">
-			<attachments>
-        		<attach file="${dist.dir}/express/cli-express-jre-win32.zip" type="zip" classifier="win32"/>
-        		<attach file="${dist.dir}/express/cli-express-jre-win64.zip" type="zip" classifier="win64"/>
-        		<attach file="${dist.dir}/express/cli-express-jre-linux32.zip" type="zip" classifier="linux32"/>
-        		<attach file="${dist.dir}/express/cli-express-jre-linux64.zip" type="zip" classifier="linux64"/>
-        		<attach file="${dist.dir}/express/cli-express-jre-darwin64.zip" type="zip" classifier="darwin64"/>
-			</attachments>
-		</pom-and-deploy>
- 	</target>
-
+	 		<echo file="${temp.dir}/express/webroot/index.cfm"><![CDATA[<cfoutput><h2>Welcome to Railo!</h2><cfdump var="#server#"/></cfoutput>]]></echo>
+			<zip destfile="${dist.dir}/express/cli-express-jre-win32.zip">
+				<zipgroupfileset file="${maven.repo.local}/oracle/jre/@{jre.version}/jre-@{jre.version}-win32.zip"/>
+		        <fileset file="${dist.dir}/cli/railo.exe" />
+		        <fileset file="${temp.dir}/express/start.bat" />
+		        <zipfileset dir="${temp.dir}/express/webroot" prefix="webroot/" />
+			</zip>
+			<zip destfile="${dist.dir}/express/cli-express-jre-win64.zip">
+				<zipgroupfileset file="${maven.repo.local}/oracle/jre/@{jre.version}/jre-@{jre.version}-win64.zip"/>
+		        <fileset file="${dist.dir}/cli/railo.exe" />
+		        <fileset file="${temp.dir}/express/start.bat" />
+		        <zipfileset dir="${temp.dir}/express/webroot" prefix="webroot/" />
+			</zip>
+			<zip destfile="${dist.dir}/express/cli-express-jre-linux32.zip">
+				<zipgroupfileset file="${maven.repo.local}/oracle/jre/@{jre.version}/jre-@{jre.version}-linux32.zip"/>
+		        <fileset file="${dist.dir}/cli/railo" />
+		        <zipfileset dir="${temp.dir}/express/webroot" prefix="webroot/" />
+			</zip>
+			<zip destfile="${dist.dir}/express/cli-express-jre-linux64.zip">
+				<zipgroupfileset file="${maven.repo.local}/oracle/jre/@{jre.version}/jre-@{jre.version}-linux64.zip"/>
+		        <fileset file="${dist.dir}/cli/railo" />
+		        <zipfileset dir="${temp.dir}/express/webroot" prefix="webroot/" />
+			</zip>
+			<zip destfile="${dist.dir}/express/cli-express-jre-darwin64.zip">
+				<zipgroupfileset file="${maven.repo.local}/oracle/jre/@{jre.version}/jre-@{jre.version}-darwin64.zip"/>
+		        <fileset file="${dist.dir}/cli/railo" />
+		        <zipfileset dir="${temp.dir}/express/webroot" prefix="webroot/" />
+			</zip>
+			<pom-and-deploy pomid="cli-express.pom" packaging="pom" buildtype="${mvn.type}"
+			 groupId="org.getrailo" artifactId="railo.cli.express" version="${cli.version}" name="railo.cli.express">
+				<attachments>
+	        		<attach file="${dist.dir}/express/cli-express-jre-win32.zip" type="zip" classifier="jre-@{jre.version}-win32"/>
+	        		<attach file="${dist.dir}/express/cli-express-jre-win64.zip" type="zip" classifier="jre-@{jre.version}-win64"/>
+	        		<attach file="${dist.dir}/express/cli-express-jre-linux32.zip" type="zip" classifier="jre-@{jre.version}-linux32"/>
+	        		<attach file="${dist.dir}/express/cli-express-jre-linux64.zip" type="zip" classifier="jre-@{jre.version}-linux64"/>
+	        		<attach file="${dist.dir}/express/cli-express-jre-darwin64.zip" type="zip" classifier="jre-@{jre.version}-darwin64"/>
+				</attachments>
+			</pom-and-deploy>
+		</sequential>
+	</macrodef>
+	
  	<target name="build.cli.mvn" depends="build.cli.rpm,build.cli.deb,build.cli.exe">
 		<pom-and-deploy pomid="cli.pom" packaging="pom" buildtype="${mvn.type}"
 			groupId="org.getrailo" artifactId="railo.cli" version="${cli.version}"
@@ -272,7 +281,7 @@ cd $reldir/build
 	        todir="${dist.dir}"
 	        package="railo-cli"
 	        section="web"
-	        depends="sun-java6-jre | openjdk-6-jre">
+	        depends="java-common">
 	        <version upstream="${cli.version}"/>
 	        <maintainer name="${cli.packager.name}" email="${cli.packager.email}"/>
 	        <description synopsis="Railo CFML Engine">Railo is a high performance CFML engine.  Version: ${railo.version.long}.</description>

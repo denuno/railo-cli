@@ -81,7 +81,7 @@ public class LoaderCLIMain {
 			System.exit(0);
 		}
 		
-		// libs dir
+		// railo libs dir
 		String strLibs=config.get("lib");
 		if(strLibs != null && strLibs.length() != 0) {
 			libDir=new File(strLibs);
@@ -93,6 +93,13 @@ public class LoaderCLIMain {
 			startServer=true;
 		}
 
+		File webRoot;
+		if(config.get("webroot") != null) {
+			webRoot = new File(config.get("webroot")).getCanonicalFile();
+		} else {
+			webRoot = new File("./").getCanonicalFile();
+		}
+		
 
         if(libDir.toString().equals("/Users/mic/Projects/Railo/Source2/railo/railo-java/railo-loader"))
 			libDir=new File("/Users/mic/temp/ext");
@@ -170,7 +177,6 @@ public class LoaderCLIMain {
         } 
         else {
         	if(debug) System.out.println("Running in server mode");
-        	File curDir = new File("./").getCanonicalFile();
 	        cli = cl.loadClass("runwar.Start");
 	        //Thread.currentThread().setContextClassLoader(cl);
 	        /*
@@ -181,7 +187,7 @@ public class LoaderCLIMain {
 			        addWarArg = false;
 			String[] newArgs;
         	if(addWarArg) {
-				newArgs = new String[] {"-war",curDir.getPath(),"-background","false"};
+				newArgs = new String[] {"-war",webRoot.getPath(),"-background","false"};
         	} else {
 				newArgs = new String[] {"-background","false"};
         	}
@@ -189,11 +195,11 @@ public class LoaderCLIMain {
 			System.arraycopy(newArgs, 0, temp, 0, newArgs.length)
 			System.arraycopy(args, 0, temp, newArgs.length, args.length);
 			newArgs = temp;        	
-	        args = new String[] { "-war",curDir.getPath()
+	        args = new String[] { "-war",webRoot.getPath()
         		,"-background","true"
         		,"-loglevel","WARN"
         		//,"-port","8078"
-        		//,"-dirs",curDir.getPath()
+        		//,"-dirs",webRoot.getPath()
         		//,"-libs",libDir.getPath()
     		};
     		*/
@@ -202,12 +208,12 @@ public class LoaderCLIMain {
 			String decodedPath = java.net.URLDecoder.decode(path, "UTF-8");
 			decodedPath = new File(decodedPath).getPath();
 
-    		//args = removeElementThenAdd(args,"-server","-war "+curDir.getPath()+" --background false --logdir " + libDir.getParent());
+    		//args = removeElementThenAdd(args,"-server","-war "+webRoot.getPath()+" --background false --logdir " + libDir.getParent());
     		String argstr;
     		if(background) {
-    			argstr="-war "+curDir.getPath()+" --background true --jar \""+decodedPath.replace('\\','/')+"\" --libdir \"" + libDir.getPath() +"\"";
+    			argstr="-war "+webRoot.getPath()+" --background true --jar \""+decodedPath.replace('\\','/')+"\" --libdir \"" + libDir.getPath() +"\"";
     		} else {
-    			argstr="-war "+curDir.getPath()+" --background false";
+    			argstr="-war "+webRoot.getPath()+" --background false";
     		}
     		args = removeElementThenAdd(args,"-server",argstr);
         	if(debug) System.out.println("Args: " + java.util.Arrays.toString(args));
