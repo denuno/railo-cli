@@ -184,7 +184,9 @@
  	</target>
 
  	<target name="build.cli.express" depends="build.cli">
+ 		<!--
  		<build-cli-express jre.version="${mvn.jre.6.version}" />
+ 		-->
  		<build-cli-express jre.version="${mvn.jre.7.version}" />
  	</target>
 
