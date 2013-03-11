@@ -47,7 +47,7 @@
         	compliance="${railo.javac.compiler}" classpath="${toString:classpath}" />
 		<!-- icon for cli -->
         <copy file="${src.dir}/resources/railo.png" todir="${temp.dir}/cli/bin/railocli" />
-        <copy file="${src.dir}/resources/jline-1.0.jar" todir="${railo.lib.dir}" />
+        <copy file="${lib.dir}/jline-1.0.jar" todir="${railo.lib.dir}" />
         <copy file="${src.dir}/cfml/cli/shell.cfm" todir="${railo.lib.dir}" />
 		<!-- use same icon for runwar -->
         <zip destfile="${temp.dir}/cli/runwar.jar" update="true" level="9">

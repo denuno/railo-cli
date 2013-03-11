@@ -5,6 +5,12 @@
 	<import file="build-cli.xml"/>
 
 	<target name="build" depends="build.cli">
-	</target>	
+	</target>
+	
+	<target name="build.testwar" depends="cfdistro.build">
+		<dependency groupId="org.mxunit" artifactId="core" version="${mxunit.version}" mapping="/mxunit" />
+		<mapping virtual="/cfml" physical="@src.dir@/cfml" />
+		<mapping virtual="/tests" physical="@src.dir@/../tests" />
+	</target>
 	
 </project>
