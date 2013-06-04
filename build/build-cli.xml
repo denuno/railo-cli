@@ -1,12 +1,12 @@
 <project name="build-cli" default="build.cli" xmlns:antcontrib="antlib:net.sf.antcontrib" basedir=".">
 
-	<property name="cli.version" value="0.2.6" />
+	<property name="cli.version" value="0.3.6" />
 	<property name="cli.packager.name" value="cfmlprojects.org" />
 	<property name="cli.packager.email" value="cfml@cfmlprojects.org" />
 	<property name="cli.use.pack200" value="true" />
-	<property name="railo.version.long" value="4.0.3.006" />
+	<property name="railo.version.long" value="4.1.0.004" />
 	<property name="mvn.repo.id" value="cfdistro.repo.local" />
-	<property name="mvn.jre.7.version" value="1.7.0_15" />
+	<property name="mvn.jre.7.version" value="1.7.0_21" />
 	<property name="mvn.jre.6.version" value="1.6.0_41" />
 	<property name="mvn.jre.version" value="${mvn.jre.7.version}" />
     <property name="maven.repo.local" location="${cfdistro.basedir}/artifacts" />
@@ -30,16 +30,16 @@
 		<zip destfile="${temp.dir}/cli/${jetty-runner.jar}" level="9">
 			<fileset dir="${temp.dir}/cli/jetty" /> 
 		</zip>
-		<pom-and-deploy pomid="railo.war.pom" packaging="war" artifact="${temp.dir}/cli/${jetty-runner.jar}" buildtype="release"
+		<pom-and-deploy pomid="jerry-runner-noasm.pom" packaging="jar" artifact="${temp.dir}/cli/${jetty-runner.jar}" buildtype="release"
 		 groupId="org.eclipse.jetty" artifactId="jetty-runner-noasm" version="${jetty-runner.version}" name="jetty-runner-noasm"/>
-				
    		<delete dir="${temp.dir}/cli/jetty" />
         <!--  copy in runwar to set a custom icon, etc. -->
         <copy file="${cfdistro.basedir}/lib/runwar.jar" todir="${temp.dir}/cli" />
 		<!--  compile the loader and the runner together, tho we will separate them into different jars -->
 		<property name="railo.lib.dir" value="${temp.dir}/railolibs" />
+		<dependency groupId="org.getrailo" artifactId="railo.dep" classifier="javax-servlet" version="${railo.version.major}.0" dest="${railo.lib.dir}" type="jar" unzip="false"/>
 		<dependency groupId="org.getrailo" artifactId="railo.libs" version="${railo.version.major}.0" dest="${railo.lib.dir}" unzip="true"/>
-		<dependency groupId="org.getrailo" artifactId="railo.core" version="${railo.version.long}" dest="${temp.dir}/railolibs" unzip="false" type="jar" />
+		<dependency groupId="org.getrailo" artifactId="railo-jar" version="${railo.version.long}" dest="${temp.dir}/railolibs" unzip="false" type="jar" />
 		<path id="classpath">
 			<fileset dir="${railo.lib.dir}"/>
 		</path>
