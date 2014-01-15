@@ -292,6 +292,7 @@ cd $reldir/build
 	        <description synopsis="Railo CFML Engine">Railo is a high performance CFML engine.  Version: ${railo.version.long}.</description>
 	   		<tarfileset file="${dist.dir}/cli/railo" prefix="usr/local/bin" filemode="755"/>
 	   	</deb>
+	   	<echo message="Updating apt (deb) repo in ${deb.repo}"/>
 		<deb-repo dir="${deb.repo}" />
 	</target>
 
