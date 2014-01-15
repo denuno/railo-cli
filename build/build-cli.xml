@@ -273,11 +273,14 @@ cd $reldir/build
 			<tarfileset file="${dist.dir}/cli/railo" prefix="/usr/bin"
 				 filemode="744" username="root" group="root"/>
 		</redline:rpm>
+		<rpm-repo dir="${rpm.repo}" />
 	</target>
 
 	<target name="build.cli.deb" depends="build.cli.bin" description="builds a .deb file for debian-based systems">
 	    <taskdef name="deb" classname="com.googlecode.ant_deb_task.Deb" classpathref="build.lib.path"/>
 	   	<echo message="Creating debian .deb file from: ${dist.dir}"/>
+		<property name="deb.repo" value="${cfdistro.basedir}/artifacts/debs/noarch" />
+		<mkdir dir="${deb.repo}"/>
 	   	<delete file="${dist.dir}/railo-cli-${cli.version}-1_all.deb" />
 	   	<deb
 	        todir="${dist.dir}"
@@ -289,6 +292,7 @@ cd $reldir/build
 	        <description synopsis="Railo CFML Engine">Railo is a high performance CFML engine.  Version: ${railo.version.long}.</description>
 	   		<tarfileset file="${dist.dir}/cli/railo" prefix="usr/local/bin" filemode="755"/>
 	   	</deb>
+		<deb-repo dir="${deb.repo}" />
 	</target>
 
 <!-- 
