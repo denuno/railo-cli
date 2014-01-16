@@ -283,7 +283,7 @@ cd $reldir/build
 		<mkdir dir="${deb.repo}"/>
 	   	<delete file="${dist.dir}/railo-cli-${cli.version}-1_all.deb" />
 	   	<deb
-	        todir="${dist.dir}"
+	        todir="${deb.repo}"
 	        package="railo-cli"
 	        section="web"
 	        depends="default-jdk">
