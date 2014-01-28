@@ -1,6 +1,6 @@
 <project name="build-cli" default="build.cli" xmlns:antcontrib="antlib:net.sf.antcontrib" basedir=".">
 
-	<property name="cli.version" value="0.3.7" />
+	<property name="cli.version" value="0.3.8" />
 	<property name="cli.packager.name" value="cfmlprojects.org" />
 	<property name="cli.packager.email" value="cfml@cfmlprojects.org" />
 	<property name="cli.use.pack200" value="true" />
@@ -286,7 +286,7 @@ cd $reldir/build
 	        todir="${deb.repo}"
 	        package="railo-cli"
 	        section="web"
-	        depends="default-jdk">
+	        depends="default-jre">
 	        <version upstream="${cli.version}"/>
 	        <maintainer name="${cli.packager.name}" email="${cli.packager.email}"/>
 	        <description synopsis="Railo CFML Engine">Railo is a high performance CFML engine.  Version: ${railo.version.long}.</description>
