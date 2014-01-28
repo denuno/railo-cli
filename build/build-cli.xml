@@ -286,7 +286,7 @@ cd $reldir/build
 	        todir="${deb.repo}"
 	        package="railo-cli"
 	        section="web"
-	        depends="default-jre">
+	        depends="openjdk-7-jre-headless | java-runtime-headless | java-common">
 	        <version upstream="${cli.version}"/>
 	        <maintainer name="${cli.packager.name}" email="${cli.packager.email}"/>
 	        <description synopsis="Railo CFML Engine">Railo is a high performance CFML engine.  Version: ${railo.version.long}.</description>
