@@ -281,7 +281,7 @@ cd $reldir/build
 	   	<echo message="Creating debian .deb file from: ${dist.dir}"/>
 		<property name="deb.repo" value="${cfdistro.basedir}/artifacts/debs/noarch" />
 		<mkdir dir="${deb.repo}"/>
-	   	<delete file="${dist.dir}/railo-cli-${cli.version}-1_all.deb" />
+	   	<delete file="${dist.dir}/railo-cli_${cli.version}-1_all.deb" />
 	   	<deb
 	        todir="${dist.dir}"
 	        package="railo-cli"
@@ -293,7 +293,7 @@ cd $reldir/build
 	   		<tarfileset file="${dist.dir}/cli/railo" prefix="usr/local/bin" filemode="755"/>
 	   	</deb>
 	   	<echo message="Updating apt (deb) repo in ${deb.repo}"/>
-		<copy file="${dist.dir}/railo-cli-${cli.version}-1_all.deb" todir="${deb.repo}" />
+		<copy file="${dist.dir}/railo-cli_${cli.version}-1_all.deb" todir="${deb.repo}" />
 		<deb-repo dir="${deb.repo}" />
 	</target>
 
