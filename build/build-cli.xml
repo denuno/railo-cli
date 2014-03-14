@@ -283,7 +283,7 @@ cd $reldir/build
 		<mkdir dir="${deb.repo}"/>
 	   	<delete file="${dist.dir}/railo-cli-${cli.version}-1_all.deb" />
 	   	<deb
-	        todir="${deb.repo}"
+	        todir="${dist.dir}"
 	        package="railo-cli"
 	        section="web"
 	        depends="java-common">
@@ -293,6 +293,7 @@ cd $reldir/build
 	   		<tarfileset file="${dist.dir}/cli/railo" prefix="usr/local/bin" filemode="755"/>
 	   	</deb>
 	   	<echo message="Updating apt (deb) repo in ${deb.repo}"/>
+		<copy file="${dist.dir}/railo-cli-${cli.version}-1_all.deb" todir="${deb.repo}" />
 		<deb-repo dir="${deb.repo}" />
 	</target>
 
