@@ -13,7 +13,11 @@ component {
         		var printWriter = createObject("java","java.io.PrintWriter").init(
         			createObject("java","java.io.OutputStreamWriter").init(variables.ansiOut,
         			// default to Cp850 encoding for Windows console output (ROO-439)
-        			System.getProperty("jline.WindowsTerminal.output.encoding", "Cp850")));
+        			System.getProperty("jline.WindowsTerminal.output.encoding", "Cp850"))
+        			);
+				var FileDescriptor = createObject("java","java.io.FileDescriptor").init();
+		    	inStream = createObject("java","java.io.FileInputStream").init(FileDescriptor.in);
+				reader = createObject("java","jline.ConsoleReader").init(inStream,printWriter);
 			} else {
 				//new PrintWriter(OutputStreamWriter(System.out,System.getProperty("jline.WindowsTerminal.output.encoding",System.getProperty("file.encoding"))));
 		    	reader = createObject("java","jline.ConsoleReader").init();
