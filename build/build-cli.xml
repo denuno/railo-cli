@@ -34,7 +34,7 @@
 		 groupId="org.eclipse.jetty" artifactId="jetty-runner-noasm" version="${jetty-runner.version}" name="jetty-runner-noasm"/>
    		<delete dir="${temp.dir}/cli/jetty" />
         <!--  copy in runwar to set a custom icon, etc. -->
-        <copy file="${cfdistro.basedir}/lib/runwar.jar" todir="${temp.dir}/cli" />
+        <copy file="${cfdistro.basedir}/lib/runwar-1.0.0.0.jar" todir="${temp.dir}/cli" />
 		<!--  compile the loader and the runner together, tho we will separate them into different jars -->
 		<property name="railo.lib.dir" value="${temp.dir}/railolibs" />
 		<dependency groupId="org.getrailo" artifactId="railo.dep" classifier="javax-servlet" version="${railo.version.major}.0" dest="${railo.lib.dir}" type="jar" unzip="false"/>
