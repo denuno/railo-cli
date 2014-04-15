@@ -105,6 +105,7 @@ public class CLIMain {
 		if(config.get("repl") != null || config.get("shell") != null) {
 				config.put("uri",libDir + "/cfml/cli/shell.cfm");
 		}
+		config.put("uri", new File(config.get("uri")).toURI().toURL().toExternalForm().replaceAll("file:/(\\w:)", "file://$1"));
 		// hack to prevent . being picked up as the system path (jacob.x.dll)
 		if(System.getProperty("java.library.path") == null) {
 			System.setProperty("java.library.path",libDir.getPath());

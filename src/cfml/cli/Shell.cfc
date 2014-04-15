@@ -3,14 +3,21 @@ component {
 	System = createObject("java", "java.lang.System");
 	ANSIBuffer = createObject("java", "jline.ANSIBuffer");
     StringEscapeUtils = createObject("java","org.apache.commons.lang.StringEscapeUtils");
-
 	keepRunning = true;
 	script = "";
 
 	function init(inStream, printWriter) {
 		if(isNull(printWriter)) {
-			//new PrintWriter(OutputStreamWriter(System.out,System.getProperty("jline.WindowsTerminal.output.encoding",System.getProperty("file.encoding"))));
-	    	reader = createObject("java","jline.ConsoleReader").init();
+			if(findNoCase("windows",server.os.name)) {
+				variables.ansiOut = createObject("java","org.fusesource.jansi.AnsiConsole").out;
+        		var printWriter = createObject("java","java.io.PrintWriter").init(
+        			createObject("java","java.io.OutputStreamWriter").init(variables.ansiOut,
+        			// default to Cp850 encoding for Windows console output (ROO-439)
+        			System.getProperty("jline.WindowsTerminal.output.encoding", "Cp850")));
+			} else {
+				//new PrintWriter(OutputStreamWriter(System.out,System.getProperty("jline.WindowsTerminal.output.encoding",System.getProperty("file.encoding"))));
+		    	reader = createObject("java","jline.ConsoleReader").init();
+			}
 		} else {
 			if(isNull(arguments.inStream)) {
 		    	var FileDescriptor = createObject("java","java.io.FileDescriptor").init();
@@ -106,9 +113,15 @@ component {
 				}
 
 	        }
+	        if(structKeyExists(variables,"ansiOut")) {
+	        	variables.ansiOut.close();
+	        }
 	        //out.close();
 		} catch (any e) {
 			printError(e);
+	        if(structKeyExists(variables,"ansiOut")) {
+	        	variables.ansiOut.close();
+	        }
 		}
     }
 

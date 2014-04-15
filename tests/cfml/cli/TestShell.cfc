@@ -65,4 +65,22 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 
 	}
 
+	public void function testWindowsANSI()  {
+		System = createObject("java", "java.lang.System");
+		var ansiOut = createObject("java","org.fusesource.jansi.AnsiConsole").out;
+        var printWriter = createObject("java","java.io.PrintWriter").init(
+        		createObject("java","java.io.OutputStreamWriter").init(ansiOut,
+        			// default to Cp850 encoding for Windows console output (ROO-439)
+        			System.getProperty("jline.WindowsTerminal.output.encoding", "Cp850")));
+    	var t = chr(9);
+    	var n = chr(10);
+		var shell = new cfml.cli.Shell(printWriter=printWriter);
+
+		shell.run("hel#t#");
+		ansiOut.close();
+		wee = replace(ansiOut,chr(0027),"","all");
+		debug(wee);
+
+	}
+
 }
