@@ -1,17 +1,37 @@
 @echo off
-set ANT_HOME=%CD%\build\cfdistro\ant\
+set CFDISTRO_HOME=%userprofile%\cfdistro
+set FILE_URL="http://cfmlprojects.org/artifacts/cfdistro/latest/cfdistro.zip"
+set FILE_DEST="%CFDISTRO_HOME%\cfdistro.zip"
+set buildfile=build/build.xml
+set ANT_HOME=%CFDISTRO_HOME%\ant
+set ANT_CMD=%CFDISTRO_HOME%\ant\bin\ant.bat
+if not exist "%CFDISTRO_HOME%" (
+  mkdir "%CFDISTRO_HOME%"
+)
+if not exist "%FILE_DEST%" (
+  echo Downloading with powershell: %FILE_URL% to %FILE_DEST%
+  powershell.exe -command "$webclient = New-Object System.Net.WebClient; $url = \"%FILE_URL%\"; $file = \"%FILE_DEST%\"; $webclient.DownloadFile($url,$file);"
+  echo Expanding with powershell to: %CFDISTRO_HOME%
+  powershell -command "$shell_app=new-object -com shell.application; $zip_file = $shell_app.namespace(\"%FILE_DEST%\"); $destination = $shell_app.namespace(\"%CFDISTRO_HOME%\"); $destination.Copyhere($zip_file.items())"
+) else (
+  echo "cfdistro.zip already downloaded, delete to re-download"
+)
 if "%1" == "" goto MENU
-set var1=%1
+set args=%1
 SHIFT
 :Loop
-IF "%1"=="" GOTO Continue
-SET var1=%var1% -D%1%
+IF "%1" == "" GOTO Continue
+SET args=%args% -D%1%
 SHIFT
-SET var1=%var1%=%1%
+IF "%1" == "" GOTO Continue
+SET args=%args%=%1%
 SHIFT
 GOTO Loop
 :Continue
-call build\cfdistro\ant\bin\ant.bat -nouserlib -f build/build.xml %var1%
+if not exist %buildfile% (
+	set buildfile="%CFDISTRO_HOME%\build.xml"
+)
+call "%ANT_CMD%" -nouserlib -f %buildfile% %args%
 goto end
 :MENU
 cls
@@ -46,22 +66,22 @@ goto MENU
 ::
 :startServer
 cls
-call build\cfdistro\ant\bin\ant.bat -f build/build.xml build.start.launch
+call "%ANT_CMD%" -nouserlib -f %buildfile% build.start.launch
 echo to stop the server, run this again or run: railo-cli.bat stop
 goto end
 ::
 :stopServer
-call build\cfdistro\ant\bin\ant.bat -f build/build.xml server.stop
+call "%ANT_CMD%" -nouserlib -f %buildfile% server.stop
 goto end
 ::
 :listTargets
-call build\cfdistro\ant\bin\ant.bat -f build/build.xml help
+call "%ANT_CMD%" -nouserlib -f %buildfile% help
 echo       press any key ...
 pause > nul
 goto MENU
 ::
 :updateProject
-call build\cfdistro\ant\bin\ant.bat -f build/build.xml project.update
+call "%ANT_CMD%" -nouserlib -f %buildfile% project.update
 echo       press any key ...
 pause > nul
 goto MENU
@@ -69,7 +89,7 @@ goto MENU
 :runTarget
 set target=
 set /p target=      Enter target name:
-if not '%target%'=='' call build\cfdistro\ant\bin\ant.bat -f build/build.xml %target%
+if not "%target%"=="" call "%0" %target%
 echo       press any key ...
 pause > nul
 goto MENU
@@ -79,5 +99,4 @@ set choice=
 echo       press any key ...
 pause
 REM EXIT
-	
 			
