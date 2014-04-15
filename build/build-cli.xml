@@ -48,7 +48,9 @@
 		<!-- icon for cli -->
         <copy file="${src.dir}/resources/railo.png" todir="${temp.dir}/cli/bin/railocli" />
         <copy file="${lib.dir}/jline-1.0.jar" todir="${railo.lib.dir}" />
-        <copy file="${src.dir}/cfml/cli/shell.cfm" todir="${railo.lib.dir}" />
+        <copy todir="${railo.lib.dir}/cfml/cli">
+        	<fileset dir="${src.dir}/cfml/cli/"/>
+    	</copy>
 		<!-- use same icon for runwar -->
         <zip destfile="${temp.dir}/cli/runwar.jar" update="true" level="9">
         	<zipfileset file="${temp.dir}/cli/bin/railocli/railo.png" fullpath="runwar/icon.png" />
@@ -89,7 +91,7 @@
 				</copy>
 				<packjars dir="${temp.dir}/packlibs" packdir="${temp.dir}/packlibs/packed"/>
 				<zip destfile="${temp.dir}/cli/libs.zip">
-		            <fileset file="${railo.lib.dir}/shell.cfm"/>
+		            <fileset dir="${railo.lib.dir}/cfml/cli"/>
 			        <fileset dir="${temp.dir}/packlibs/packed"/>
 				</zip>
 				<delete dir="${temp.dir}/packlibs" />
@@ -98,7 +100,7 @@
 				<zip destfile="${temp.dir}/cli/libs.zip">
 			        <fileset dir="${railo.lib.dir}">
 			            <include name="**/*.jar"/>
-			            <include name="**/shell.cfm"/>
+			            <include name="**/cfml/**"/>
 			            <exclude name="**/railo-loader.jar"/>
 			            <exclude name="**/javax.servlet.jar"/>
 			        </fileset>
@@ -129,7 +131,6 @@
         <chmod file="${dist.dir}/cli/railo" perm="a+x"/>
 		<zip destfile="${dist.dir}/cli/railo.bin.zip">
 	        <zipfileset file="${dist.dir}/cli/railo" filemode="711" prefix="" />
-			<zipfileset file="${src.dir}/cfml/cli/shell.cfm" prefix="" />
 		</zip>
  	</target>
 
@@ -140,7 +141,6 @@
         	headerType="console" customProcName="false" stayAlive="true"/>
 		<zip destfile="${dist.dir}/cli/railo.win32.zip">
 	        <zipfileset file="${dist.dir}/cli/railo.exe" prefix="" />
-			<zipfileset file="${src.dir}/cfml/cli/shell.cfm" prefix="" />
 		</zip>
 	</target>
 
@@ -149,27 +149,22 @@
 		<zip destfile="${dist.dir}/cli/cli-jre-win32.zip">
 			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-win32.zip"/>
 	        <fileset file="${dist.dir}/cli/railo.exe" />
-			<zipfileset file="${src.dir}/cfml/cli/shell.cfm" prefix="" />
 		</zip>
 		<zip destfile="${dist.dir}/cli/cli-jre-win64.zip">
 			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-win64.zip"/>
 	        <fileset file="${dist.dir}/cli/railo.exe" />
-			<zipfileset file="${src.dir}/cfml/cli/shell.cfm" prefix="" />
 		</zip>
 		<zip destfile="${dist.dir}/cli/cli-jre-linux32.zip">
 			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-linux32.zip"/>
 	        <fileset file="${dist.dir}/cli/railo" />
-			<zipfileset file="${src.dir}/cfml/cli/shell.cfm" prefix="" />
 		</zip>
 		<zip destfile="${dist.dir}/cli/cli-jre-linux64.zip">
 			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-linux64.zip"/>
 	        <fileset file="${dist.dir}/cli/railo" />
-			<zipfileset file="${src.dir}/cfml/cli/shell.cfm" prefix="" />
 		</zip>
 		<zip destfile="${dist.dir}/cli/cli-jre-darwin64.zip">
 			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-darwin64.zip"/>
 	        <fileset file="${dist.dir}/cli/railo" />
-			<zipfileset file="${src.dir}/cfml/cli/shell.cfm" prefix="" />
 		</zip>
 		<pom-and-deploy pomid="cli-jre.pom" packaging="pom" buildtype="${mvn.type}"
 		 groupId="org.getrailo" artifactId="railo.cli.jre" version="${cli.version}" name="railo.cli.jre">

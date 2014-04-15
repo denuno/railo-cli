@@ -7,7 +7,7 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		var shell = new cfml.cli.Shell(bain,printWriter);
 		commandHandler = new cfml.cli.CommandHandler(shell);
 		commandHandler.loadCommands(new cfml.cli.Commands(shell));
-		commandHandler.runCommand("ls");
+		commandHandler.runCommandline("ls");
 		debug(baos.toString());
 
 	}
