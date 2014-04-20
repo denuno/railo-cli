@@ -4,7 +4,10 @@ component {
 	ANSIBuffer = createObject("java", "jline.ANSIBuffer");
     StringEscapeUtils = createObject("java","org.apache.commons.lang.StringEscapeUtils");
 	keepRunning = true;
+    reloadshell = false;
 	script = "";
+	initialDirectory = createObject("java","java.lang.System").getProperty("user.dir");
+	pwd = initialDirectory;
 
 	function init(inStream, printWriter) {
 		if(isNull(printWriter)) {
@@ -12,7 +15,7 @@ component {
 				variables.ansiOut = createObject("java","org.fusesource.jansi.AnsiConsole").out;
         		var printWriter = createObject("java","java.io.PrintWriter").init(
         			createObject("java","java.io.OutputStreamWriter").init(variables.ansiOut,
-        			// default to Cp850 encoding for Windows console output (ROO-439)
+        			// default to Cp850 encoding for Windows
         			System.getProperty("jline.WindowsTerminal.output.encoding", "Cp850"))
         			);
 				var FileDescriptor = createObject("java","java.io.FileDescriptor").init();
@@ -36,12 +39,54 @@ component {
     	return reader;
 	}
 
-	function stop() {
+	function exit() {
+    	keepRunning = false;
+	}
+
+	function reload() {
+		reloadshell = true;
     	keepRunning = false;
 	}
 
 	function getText() {
     	return reader.getCursorBuffer().toString();
+	}
+
+	function unescapeHTML(required html) {
+    	var text = StringEscapeUtils.unescapeHTML(html);
+    	text = replace(text,"<" & "br" & ">","","all");
+       	return text;
+	}
+
+	function HTML2ANSI(required html) {
+    	var text = replace(html,"<" & "br" & ">","","all");
+    	var matches = REMatch('(?i)<b[^>]*>(.+?)</b>', text);
+    	for(var match in matches) {
+    		var boldtext = ansi("bold",reReplaceNoCase(match,"<b[^>]*>(.+?)</b>","\1"));
+    		text = replace(text,match,boldtext,"one");
+    	}
+    	//request.debug(matches);
+		//system.out.println(text);
+    	//request.debug(text);
+       	return text;
+	}
+
+	function pwd() {
+    	return pwd;
+	}
+
+	function cd(directory="") {
+		directory = replace(directory,"\","/","all");
+		if(directory=="") {
+			pwd = initialDirectory;
+		} else if(directory=="."||directory=="./") {
+			// do nothing
+		} else if(directoryExists(directory)) {
+	    	pwd = directory;
+		} else {
+			return "cd: #directory#: No such file or directory";
+		}
+		return pwd;
 	}
 
 	function ansi(required color, required string) {
@@ -52,6 +97,8 @@ component {
     function run(input="") {
         var mask = "*";
         var trigger = "su";
+        reloadshell = false;
+
 		try{
 	        if (input != "") {
 	        	input &= chr(10);
@@ -72,7 +119,17 @@ component {
 					keepRunning = false;
 				}
 				reader.printNewLine();
-	        	line = reader.readLine();
+				try {
+		        	line = reader.readLine();
+				} catch (any er) {
+					printError(er);
+					// reload();
+					continue;
+				}
+				if(trim(line) == "reload") {
+					reload();
+					continue;
+				}
 	            //reader.printString("======>" & line);
 	            // If we input the special word then we will mask
 	            // the next line.
@@ -80,42 +137,16 @@ component {
 	                line = reader.readLine("password> ", javacast("char",mask));
 	            }
 				var args = rematch("'.*?'|"".*?""|\S+",line);
-				if(listContains(commandHandler.listCommands(),args[1])) {
+				if(args.size() == 0 || len(trim(line))==0) continue;
+				if(listFindNoCase(commandHandler.listCommands(),trim(args[1]))) {
 					try{
-						commandHandler.runCommandLine(line);
+						var result = commandHandler.runCommandLine(line);
+						var result = isNull(result) ? "" : reader.printString(result);
 					} catch (any e) { printError(e); }
 					continue;
+				} else {
+					printError({message:"'#args[1]#' is unknown.  Did you mean one of these: #commandHandler.listCommands()#?"});
 				}
-	//			request.debug("NOHANDLER");
-				switch(args[1]) {
-					case "clear":
-						script = "";
-						break;
-
-					case "version":
-						reader.printString(_shellprops.version & chr(10));
-						break;
-
-					case "exit": case "quit": case "q":
-						reader.printString("Peace out!");
-						keepRunning = false;
-						break;
-
-					case "":
-						reader.printString(script);
-						reader.printString(evaluate(script));
-						break;
-
-					default:
-						try {
-							reader.printString(line & " = " & evaluate(line) & chr(10));
-							script &= line  & chr(10);
-						} catch (any e) {
-							printError(e);
-						}
-						break;
-				}
-
 	        }
 	        if(structKeyExists(variables,"ansiOut")) {
 	        	variables.ansiOut.close();
@@ -127,10 +158,11 @@ component {
 	        	variables.ansiOut.close();
 	        }
 		}
+		return reloadshell;
     }
 
 	function printError(required err) {
-		reader.printString(ansi("red","error:") &  #e.message#);
+		reader.printString(ansi("red","ERROR: ") & HTML2ANSI(err.message));
 		if (structKeyExists( err, 'tagcontext' )) {
 			var lines=arrayLen( err.tagcontext );
 			if (lines != 0) {
@@ -138,9 +170,9 @@ component {
 					tc = err.tagcontext[ idx ];
 					if (len( tc.codeprinthtml )) {
 						isFirst = ( idx == 1 );
-						isFirst ? reader.printString(ansi("red","*#tc.template#: line #tc.line#*")) : reader.printString(ansi("magenta","#ansi('bold','called from')# #tc.template#: line #tc.line#"));
+						isFirst ? reader.printString(ansi("red","#tc.template#: line #tc.line#")) : reader.printString(ansi("magenta","#ansi('bold','called from ')# #tc.template#: line #tc.line#"));
 						reader.printNewLine();
-						reader.printString(ansi("blue",tc.codeprinthtml));
+						reader.printString(ansi("blue",HTML2ANSI(tc.codeprinthtml)));
 					}
 				}
 			}

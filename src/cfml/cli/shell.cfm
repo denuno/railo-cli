@@ -12,6 +12,12 @@
 </cfsavecontent>
 <cfscript>
 	systemOutput(_shellprops.help);
-	new Shell().run();
+	shell = new Shell();
+	while (shell.run()) {
+		systemOutput("Reloading shell.");
+		SystemCacheClear("all");
+		shell = javacast("null","");
+		shell = new Shell();
+	}
 </cfscript>
 </cfsilent>

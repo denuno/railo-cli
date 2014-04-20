@@ -6,7 +6,7 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
     	var printWriter = createObject("java","java.io.PrintWriter").init(baos);
 		var shell = new cfml.cli.Shell(bain,printWriter);
 		commandHandler = new cfml.cli.CommandHandler(shell);
-		commandHandler.loadCommands(new cfml.cli.Commands(shell));
+		commandHandler.initCommands();
 		commandHandler.runCommandline("ls");
 		debug(baos.toString());
 
@@ -24,6 +24,16 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 
 	}
 
+	public void function testHTML2ANSI()  {
+		var shell = new cfml.cli.Shell();
+		var result = shell.HTML2ANSI("
+		<b>some bold text</b>
+		some non-bold text
+		<b>some bold text</b>
+		");
+		//debug(serialize(result));
+	}
+
 	public void function testShellComplete()  {
     	var baos = createObject("java","java.io.ByteArrayOutputStream").init();
     	var printWriter = createObject("java","java.io.PrintWriter").init(baos);
@@ -36,6 +46,18 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		wee = replace(baos.toString(),chr(0027),"","all");
 		debug(wee);
 		assertTrue(find("HELP",wee));
+		baos.reset();
+
+		shell.run("cfdistro #t#");
+		wee = replace(baos.toString(),chr(0027),"","all");
+		debug(wee);
+		assertTrue(find("build",wee));
+		baos.reset();
+
+		shell.run("cfdistro buil#t#");
+		wee = replace(baos.toString(),chr(0027),"","all");
+		debug(wee);
+		assertTrue(find("build",wee));
 		baos.reset();
 
 		shell.run("ls #t#");

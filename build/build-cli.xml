@@ -1,6 +1,6 @@
 <project name="build-cli" default="build.cli" xmlns:antcontrib="antlib:net.sf.antcontrib" basedir=".">
 
-	<property name="cli.version" value="0.4.1" />
+	<property name="cli.version" value="0.4.2" />
 	<property name="cli.packager.name" value="cfmlprojects.org" />
 	<property name="cli.packager.email" value="cfml@cfmlprojects.org" />
 	<property name="cli.use.pack200" value="true" />
@@ -37,6 +37,8 @@
         <copy file="${cfdistro.basedir}/lib/runwar-1.0.0.0.jar" todir="${temp.dir}/cli" />
 		<!--  compile the loader and the runner together, tho we will separate them into different jars -->
 		<property name="railo.lib.dir" value="${temp.dir}/railolibs" />
+   		<delete dir="${railo.lib.dir}" />
+   		<mkdir dir="${railo.lib.dir}" />
 		<dependency groupId="org.getrailo" artifactId="railo.dep" classifier="javax-servlet" version="${railo.version.major}.0" dest="${railo.lib.dir}" type="jar" unzip="false"/>
 		<dependency groupId="org.getrailo" artifactId="railo.libs" version="${railo.version.major}.0" dest="${railo.lib.dir}" unzip="true"/>
 		<dependency groupId="org.getrailo" artifactId="railo-jar" version="${railo.version.long}" dest="${temp.dir}/railolibs" unzip="false" type="jar" />
@@ -53,7 +55,7 @@
         	<fileset dir="${src.dir}/cfml/cli/"/>
     	</copy>
 		<!-- use same icon for runwar -->
-        <zip destfile="${temp.dir}/cli/runwar.jar" update="true" level="9">
+        <zip destfile="${temp.dir}/cli/runwar-1.0.0.0.jar" update="true" level="9">
         	<zipfileset file="${temp.dir}/cli/bin/railocli/railo.png" fullpath="runwar/icon.png" />
         </zip>
         <!-- 
@@ -72,6 +74,10 @@
 		</jar>
 		<delete dir="${temp.dir}/cli/bin/railocli" />
 
+		<!--  create the cfml zip -->
+		<zip destfile="${temp.dir}/cli/cfml.zip">
+	        <fileset dir="${src.dir}/cfml"/>
+		</zip>
 		<!--  create the libs zip including cli loader, optionally use pack200 -->
 		<antcontrib:if>
 			<equals arg1="${cli.use.pack200}" arg2="true" />
@@ -92,7 +98,6 @@
 				</copy>
 				<packjars dir="${temp.dir}/packlibs" packdir="${temp.dir}/packlibs/packed"/>
 				<zip destfile="${temp.dir}/cli/libs.zip">
-		            <fileset dir="${railo.lib.dir}/cfml/cli"/>
 			        <fileset dir="${temp.dir}/packlibs/packed"/>
 				</zip>
 				<delete dir="${temp.dir}/packlibs" />
@@ -101,7 +106,6 @@
 				<zip destfile="${temp.dir}/cli/libs.zip">
 			        <fileset dir="${railo.lib.dir}">
 			            <include name="**/*.jar"/>
-			            <include name="**/cfml/**"/>
 			            <exclude name="**/railo-loader.jar"/>
 			            <exclude name="**/javax.servlet.jar"/>
 			        </fileset>
@@ -114,12 +118,14 @@
 		<delete file="${temp.dir}/cli/railocli.jar" />
 		<delete file="${temp.dir}/runwar.jar" />
 
+        <copy file="${src.dir}/java/cliloader/cli.properties" todir="${temp.dir}/cli/bin/cliloader" />
 		<jar destfile="${runcli.jar.file}" filesetmanifest="mergewithoutmain" level="9">
 			<manifest>
 				<attribute name="Main-Class" value="cliloader.LoaderCLIMain" />
 			</manifest>
 			<zipgroupfileset file="${temp.dir}/cli/jetty-runner.jar" />
 			<fileset file="${temp.dir}/cli/libs.zip" />
+			<fileset file="${temp.dir}/cli/cfml.zip" />
 			<fileset dir="${temp.dir}/cli/bin" />
 		</jar>
  	</target>

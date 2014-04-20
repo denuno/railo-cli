@@ -16,52 +16,62 @@ import java.util.LinkedList;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
 
 public class LoaderCLIMain {
 
-	private static String ZIP_PATH = "libs.zip";
+	private static String LIB_ZIP_PATH = "libs.zip";
+	private static String CFML_ZIP_PATH = "cfml.zip";
 	private static final int KB = 1024;
+	private static ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+	private static Boolean debug = false;
 
 	public static void main(String[] args) throws Throwable {
-		ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+		Properties props = new Properties();
+		try {
+	        props.load(classLoader.getSystemResourceAsStream("cliloader/cli.properties"));
+	    } catch (IOException e) { e.printStackTrace(); }
+		String name = props.getProperty("name") != null ? props.getProperty("name") : "railo";
+		String NAME = name.toUpperCase();
+		String version = props.getProperty("version") != null ? props.getProperty("version") : "0.0.0.0";
 		Map<String,String> config=toMap(args);
-		Boolean debug = false, updateLibs = false;
+		Boolean updateLibs = false;
 		Boolean startServer = false;
 		Boolean background = false;
-		File railo_home;
+		File cli_home;
 		Map<String, String> env = System.getenv();
-		if (config.get("railo_home") != null) {
-			railo_home = new File(config.get("railo_home"));
-			args = removeElement(args,"-railo_home");
-		} else if (System.getProperty("RAILO_HOME") != null) {
-			railo_home = new File(System.getProperty("RAILO_HOME"));
-		} else if (env.get("RAILO_HOME") != null) {
-			railo_home = new File(env.get("RAILO_HOME"));
+		if (config.get(name+"_home") != null) {
+			cli_home = new File(config.get(name+"_home"));
+			args = removeElement(args,"-"+name+"_home");
+		} else if (System.getProperty(NAME+"_HOME") != null) {
+			cli_home = new File(System.getProperty(NAME+"_HOME"));
+		} else if (env.get(NAME+"_HOME") != null) {
+			cli_home = new File(env.get(NAME+"_HOME"));
 		} else {
 			String userHome = System.getProperty("user.home");
 			if(userHome != null) {
-				railo_home = new File(userHome + "/.railo/");
+				cli_home = new File(userHome + "/."+name+"/");
 			} else {
-				railo_home = new File(LoaderCLIMain.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getParentFile();
+				cli_home = new File(LoaderCLIMain.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getParentFile();
 			}
 		}
-		if(!railo_home.exists()) {
-			System.out.println("Configuring Railo home: "+ railo_home + " (change with -lib=/path/to/dir)");
-			railo_home.mkdir();
+		if(!cli_home.exists()) {
+			System.out.println("Configuring "+name+" home: "+ cli_home + " (change with -"+name+"_home=/path/to/dir)");
+			cli_home.mkdir();
 		}
-		//System.out.println(railo_home.getPath());
-		File libDir=new File(railo_home,"lib").getCanonicalFile();
+		//System.out.println(home_dir.getPath());
+		File libDir=new File(cli_home,"lib").getCanonicalFile();
 		
 		// debug
 		if(config.get("debug") != null) {
 			debug = true;
-			System.out.println("Using configuration in "+ railo_home + " (change with -lib=/path/to/dir)");
+			System.out.println("Using configuration in "+ cli_home + " (change with -"+name+"_home=/path/to/dir)");
 		}
 		// update/overwrite libs
 		if(config.get("update") != null) {
-			System.out.println("updating libs");
+			System.out.println("updating "+name+" home");
 			updateLibs = true;
 			args = removeElement(args,"-update");
 		}
@@ -71,12 +81,8 @@ public class LoaderCLIMain {
 			args = removeElement(args,"-background");
 		}
 		
-		if(config.get("?") != null || args.length == 0) {
-			System.out.println("USAGE: railo /path/to/script [-libs=/path/to/libs/dir -webroot=/path/to/web -uri=/webroot/script/path -config-server=/path/to/dir -config-web=/path/to/dir] [-form=name=susi -cgi=user_agent=urs]");
-			System.out.println("Ex: 'railo test.cfm'");
-			System.out.println("Or for shell/REPL mode: 'railo -shell' or 'railo -repl'");
-			System.out.println("Or for server mode: 'railo -server --port=8088'");
-			System.out.println("And to update libs after updating binary: 'railo -update'");
+		if(!updateLibs && (config.get("?") != null || args.length == 0)) {
+			System.out.println(props.get("usage").toString().replace("/n",System.lineSeparator()));
 			Thread.sleep(1000);
 			System.exit(0);
 		}
@@ -99,60 +105,22 @@ public class LoaderCLIMain {
 		} else {
 			webRoot = new File("./").getCanonicalFile();
 		}
-		
-
-        if(libDir.toString().equals("/Users/mic/Projects/Railo/Source2/railo/railo-java/railo-loader"))
-			libDir=new File("/Users/mic/temp/ext");
 
 		if(debug) System.out.println("lib dir: " + libDir);
 
 		if (!libDir.exists() || libDir.listFiles(new ExtFilter()).length < 2 
 				|| updateLibs) {
-			libDir.mkdir();
-			URL resource = classLoader.getResource(ZIP_PATH);
-			if (resource == null) {
-				System.err.println("Could not find the " + ZIP_PATH + " on classpath!");
-				System.exit(1);
-			}
-			if(debug) System.out.println("Extracting " + ZIP_PATH);
 			System.out.println("Library path: " + libDir);
 			System.out.println("Initializing libraries -- this will only happen once, and takes a few seconds...");
-			try {
-
-				BufferedInputStream bis = new BufferedInputStream(resource.openStream());
-				JarInputStream jis = new JarInputStream(bis);
-				JarEntry je = null;
-
-				while ((je = jis.getNextJarEntry()) != null) {
-					java.io.File f = new java.io.File(libDir.toString() + java.io.File.separator + je.getName());
-					if (je.isDirectory()) {
-						f.mkdir();
-						continue;
-					}
-					File parentDir = new File(f.getParent());
-					if (!parentDir.exists()) {
-						parentDir.mkdir();
-					}
-					writeStreamTo(jis, new FileOutputStream(f), 8 * KB);
-					if(f.getPath().endsWith("pack.gz")) {
-						Util.unpack(f);
-						f.delete();
-					}
-					System.out.print(".");
-				}
-				bis.close();
-				System.out.println("");
-				System.out.println("Libraries initialized");
-
-			} catch (Exception exc) {
-				exc.printStackTrace();
-			}
-			if(updateLibs && args.length == 1) {
+			unzipInteralZip(LIB_ZIP_PATH,libDir);
+			unzipInteralZip(CFML_ZIP_PATH,new File(cli_home.getPath()+"/cfml"));
+			System.out.println("");
+			System.out.println("Libraries initialized");
+			if(updateLibs && args.length == 0) {
 				System.out.println("updated! ctrl-c now or wait a few seconds for exit..");
 				System.exit(0);
 			}
 		}
-
 		
         File[] children = libDir.listFiles(new ExtFilter());
         if(children.length<2) {
@@ -172,37 +140,16 @@ public class LoaderCLIMain {
 		//Thread.currentThread().setContextClassLoader(cl);
         Class cli;
         if(!startServer) {
+    		String SHELL_CFM = props.getProperty("shell") != null ? props.getProperty("shell") : "/cfml/cli/shell.cfm";
         	if(debug) System.out.println("Running in CLI mode");
+    		if(config.get("repl") != null || config.get("shell") != null) {
+        		args = removeElementThenAdd(args,"-uri","-uri="+ cli_home + SHELL_CFM);
+    		}
 	        cli = cl.loadClass("railocli.CLIMain");
         } 
         else {
         	if(debug) System.out.println("Running in server mode");
 	        cli = cl.loadClass("runwar.Start");
-	        //Thread.currentThread().setContextClassLoader(cl);
-	        /*
-	        System.out.println(libDir.getPath()+"/");
-	        Boolean addWarArg = true;
-			for (String s : args)
-			    if (s.toLowerCase().startsWith("-war"))
-			        addWarArg = false;
-			String[] newArgs;
-        	if(addWarArg) {
-				newArgs = new String[] {"-war",webRoot.getPath(),"-background","false"};
-        	} else {
-				newArgs = new String[] {"-background","false"};
-        	}
-			String[] temp = new String[args.length + newArgs.length];
-			System.arraycopy(newArgs, 0, temp, 0, newArgs.length)
-			System.arraycopy(args, 0, temp, newArgs.length, args.length);
-			newArgs = temp;        	
-	        args = new String[] { "-war",webRoot.getPath()
-        		,"-background","true"
-        		,"-loglevel","WARN"
-        		//,"-port","8078"
-        		//,"-dirs",webRoot.getPath()
-        		//,"-libs",libDir.getPath()
-    		};
-    		*/
 			String path = LoaderCLIMain.class.getProtectionDomain().getCodeSource().getLocation().getPath();
 			//System.out.println("yum from:"+path);
 			String decodedPath = java.net.URLDecoder.decode(path, "UTF-8");
@@ -224,8 +171,44 @@ public class LoaderCLIMain {
 		} catch (Exception e) {
 			e.getCause().printStackTrace();
 		}
-        
-        
+	}
+	
+	public static void unzipInteralZip(String resourcePath, File libDir) {
+		if(debug) System.out.println("Extracting " + resourcePath);
+		libDir.mkdir();
+		URL resource = classLoader.getResource(resourcePath);
+		if (resource == null) {
+			System.err.println("Could not find the " + resourcePath + " on classpath!");
+			System.exit(1);
+		}
+		try {
+
+			BufferedInputStream bis = new BufferedInputStream(resource.openStream());
+			JarInputStream jis = new JarInputStream(bis);
+			JarEntry je = null;
+
+			while ((je = jis.getNextJarEntry()) != null) {
+				java.io.File f = new java.io.File(libDir.toString() + java.io.File.separator + je.getName());
+				if (je.isDirectory()) {
+					f.mkdir();
+					continue;
+				}
+				File parentDir = new File(f.getParent());
+				if (!parentDir.exists()) {
+					parentDir.mkdir();
+				}
+				writeStreamTo(jis, new FileOutputStream(f), 8 * KB);
+				if(f.getPath().endsWith("pack.gz")) {
+					Util.unpack(f);
+					f.delete();
+				}
+				System.out.print(".");
+			}
+			bis.close();
+		} catch (Exception exc) {
+			exc.printStackTrace();
+		}
+		
 	}
 	
 	public static String[] removeElement(String[] input, String deleteMe) {
