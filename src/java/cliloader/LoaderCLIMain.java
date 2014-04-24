@@ -81,8 +81,12 @@ public class LoaderCLIMain {
 			args = removeElement(args,"-background");
 		}
 		
-		if(!updateLibs && (config.get("?") != null || args.length == 0)) {
-			System.out.println(props.get("usage").toString().replace("/n",System.lineSeparator()));
+		// default to running the shell
+		if(args.length == 0) {
+			config.put("shell","true");			
+		}
+		if(!updateLibs && (config.get("?") != null || config.get("help") != null)) {
+			System.out.println(props.get("usage").toString().replace("/n",System.getProperty("line.separator").toString()));
 			Thread.sleep(1000);
 			System.exit(0);
 		}
