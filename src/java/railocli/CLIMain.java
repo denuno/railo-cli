@@ -147,6 +147,7 @@ public class CLIMain {
 		try{
 			engine = CFMLEngineFactory.getInstance(servletConfig);
 		} catch (Exception e) {
+			e.printStackTrace();
 		} finally {
 			System.setOut(origOut);
 		}
