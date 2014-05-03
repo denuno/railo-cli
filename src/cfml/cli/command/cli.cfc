@@ -1,3 +1,9 @@
+/**
+ * General CLI commands (in the default namespace)
+ * You can specify the command name to use with: @command.name
+ * and you can specify any aliases (not shown in command list)
+ * via: @command.aliases list,of,aliases
+ **/
 component output="false" persistent="false" trigger="" {
 
 	function init(shell) {
@@ -8,47 +14,28 @@ component output="false" persistent="false" trigger="" {
 	}
 
 	/**
-	 * Display help information
-	 **/
-	function help(String command="")  {
-		var result = shell.ansi("green","CLI HELP") & cr;
-		for(var fun in getMetadata(this).functions) {
-			if(fun.name != "init") {
-				result &= chr(9) & shell.ansi("cyan",fun.name) & " : " & fun.hint & cr;
-				result &= chr(9) & shell.ansi("magenta","Arguments") & cr;
-				for(var param in fun.parameters) {
-					result &= chr(9);
-					if(param.required)
-						result &= shell.ansi("red","required ");
-					result &= param.type & " ";
-					result &= shell.ansi("magenta",param.name)
-					if(!isNull(param.default))
-						result &= "=" & param.default & " ";
-					if(!isNull(param.hint))
-						result &= " (#param.hint#)";
-				 	result &= cr;
-				}
-				result &= cr;
-			}
-		}
-		return result;
-	}
-
-	/**
-	 * List directories
-	 * 	ex: ls /my/path
-	 **/
-	function ls(String directory="", Boolean recurse=false)  {
-		return dir(directory,recurse);
+	 * display help information
+	 * @namespace.hint namespace (or namespaceless command) to get help for
+ 	 * @command.hint command to get help for
+ 	 * @command.aliases h,?
+  	 **/
+	function help(String namespace="", String command="")  {
+		return shell.help(namespace,command);
 	}
 
 	/**
 	 * List directories
 	 * 	ex: dir /my/path
+	 * @directory.hint directory
+	 * @recurse.hint recursively list
+ 	 * @command.aliases ls, directory
 	 **/
 	function dir(String directory="", Boolean recurse=false)  {
 		var result = "";
 		directory = trim(directory) == "" ? shell.pwd() : directory;
+		if(!directoryExists(directory)) {
+			throw(type="command.exception", message="Directory does not exist: " & directory);
+		}
 		for(var d in directoryList(directory,recurse)) {
 			result &= shell.ansi("cyan",d) & cr;
 		}
@@ -56,27 +43,25 @@ component output="false" persistent="false" trigger="" {
 	}
 
 	/**
-	 * List directories
-	 * 	ex: dir /my/path
-	 **/
-	function directory(String directory="", Boolean recurse=false)  {
-		return dir(directory);
-	}
-
-	/**
-	 * Get version
+	 * returns shell version
 	 **/
 	function version()  {
-		return "1.0.0";
+		return shell.version();
 	}
 
 
 	/**
 	 * Set prompt
 	 **/
-	function prompt(required String prompt)  {
-		reader.setDefaultPrompt(prompt);
-		return "setting prompt";
+	function prompt(String prompt="")  {
+		shell.setPrompt(prompt);
+	}
+
+	/**
+	 * Clear screen
+	 **/
+	function clear()  {
+		shell.clearScreen();
 	}
 
 	/**
@@ -88,9 +73,103 @@ component output="false" persistent="false" trigger="" {
 
 	/**
 	 * change directory
-	 **/
+	 * @directory.hint directory to CD to
+* 	 **/
 	function cd(directory="")  {
 		return shell.cd(directory);
+	}
+
+	/**
+	 * display file contents
+	 * @command.aliases type
+	 * @file.hint file to view contents of
+ 	 **/
+	function cat(file="")  {
+		if(left(file,1) != "/"){
+			file = shell.pwd() & "/" & file;
+		}
+		return fileRead(file);
+	}
+
+	/**
+	 * dump a variable
+	 * @command.aliases cfdump
+	 * @command.name dump
+	 * @var.hint variable to dump
+ 	 **/
+	function dumpvar(var="",label="")  {
+		return evaluate(var);
+	}
+
+	/**
+	 * delete a file or directory
+	 * @command.aliases rm,del
+	 * @file.hint file or directory to delete
+	 * @force.hint force deletion
+	 * @recurse.hint recursive deletion of files
+	 **/
+	function delete(required file="", Boolean force=false, Boolean recurse=false)  {
+		if(!fileExists(file)) {
+			shell.printError({message="file does not exist: #file#"});
+		} else {
+			var isConfirmed = shell.ask("delete #file#? [y/n] : ");
+			if(left(isConfirmed,1) == "y" || isBoolean(isConfirmed) && isConfirmed) {
+				fileDelete(file);
+				return "deleted #file#";
+			}
+		}
+		return "";
+	}
+
+	/**
+	 * updates the shell
+	 * @command.aliases update
+	 **/
+	function update(Boolean force=false) {
+		var temp = shell.getTempDir();
+		http url="http://cfmlprojects.org/artifacts/org/coldbox/box.cli/maven-metadata.xml" file="#temp#/maven-metadata.xml";
+		var mavenData = xmlParse("#temp#/maven-metadata.xml");
+		var latest = xmlSearch(mavendata,"/metadata/versioning/versions/version[last()]/text()");
+		latest = latest[1].xmlValue;
+		if(latest!=shell.version() || force) {
+			var result = shell.callCommand("cfdistro","dependency",{artifactId:"box.cli",groupId:"org.coldbox",version=latest,classifier="cfml"});
+		}
+		zip action="unzip" file="#shell.getArtifactsDir()#/org/coldbox/box.cli/#latest#/box.cli-#latest#-cfml.zip"
+		 destination="#shell.getHomeDir()#/cfml";
+		return "installed #latest# (#result#)";
+	}
+
+	/**
+	 * updates the engine
+	 * @command.name update-engine
+	 * @command.aliases update
+	 **/
+	function updateengine(Boolean force=false) {
+		var temp = shell.getTempDir();
+		http url="http://cfmlprojects.org/artifacts/org/getrailo/railo-rc/maven-metadata.xml" file="#temp#/maven-metadata.xml";
+		var mavenData = xmlParse("#temp#/maven-metadata.xml");
+		var latest = xmlSearch(mavendata,"/metadata/versioning/versions/version[last()]/text()");
+		var current = server.railo.version;
+		var message = "Current Version: " & current & cr;
+		latest = latest[1].xmlValue;
+		message &= "Latest Version: " & latest & cr;
+		if(latest!=current || force) {
+			var result = shell.callCommand("cfdistro","dependency",{artifactId:"railo-rc",groupId:"org.getrailo",version=latest,type="rc",classifier=""});
+			message &= "Updating to " & latest & cr;
+			fileCopy("#shell.getArtifactsDir()#/org/getrailo/railo-rc/#latest#/railo-rc-#latest#.rc",
+				"#shell.getHomeDir()#/server/railo-server/patches");
+			admin action="restart" type="server" password="testtest" remoteClients="";
+			admin action="updatePassword" type="web" newPassword="test1234";
+		}
+		return message;
+	}
+
+	/**
+	 * echoes output
+	 * @message.hint message
+  	 **/
+	function echo(required String message) {
+		return message;
 	}
 
 	/**
@@ -101,20 +180,19 @@ component output="false" persistent="false" trigger="" {
 	}
 
 	/**
-	 * Exit CLI
-	 **/
+	* Exit
+	* @command.aliases quit,q,e
+	*/
 	function exit()  {
 		shell.exit();
-		return "Peace out!";
 	}
 
 	/**
 	 * Reload CLI
-	 **/
-	function reload()  {
-		shell.reload();
-		return "Reloading...";
+	 * @clearScreen.hint clears the screen after reload
+  	 **/
+	function reload(Boolean clearScreen=true)  {
+		shell.reload(clearScreen);
 	}
-
 
 }

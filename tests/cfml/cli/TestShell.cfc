@@ -20,8 +20,13 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
     	var inStream = createObject("java","java.io.ByteArrayInputStream").init(line.getBytes());
 		var shell = new cfml.cli.Shell(inStream,printWriter);
 		shell.run();
-		debug(baos.toString());
+//		debug(baos.toString());
 
+	}
+
+	public void function testHelp()  {
+		var shell = new cfml.cli.Shell();
+		var result = shell.help();
 	}
 
 	public void function testHTML2ANSI()  {
@@ -31,7 +36,6 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		some non-bold text
 		<b>some bold text</b>
 		");
-		//debug(serialize(result));
 	}
 
 	public void function testShellComplete()  {
@@ -44,45 +48,38 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 
 		shell.run("hel#t#");
 		wee = replace(baos.toString(),chr(0027),"","all");
-		debug(wee);
-		assertTrue(find("HELP",wee));
+		//request.debug(wee);
+		assertTrue(find("help",wee));
 		baos.reset();
 
 		shell.run("cfdistro #t#");
 		wee = replace(baos.toString(),chr(0027),"","all");
-		debug(wee);
-		assertTrue(find("build",wee));
+		assertTrue(find("war",wee));
 		baos.reset();
 
-		shell.run("cfdistro buil#t#");
+		shell.run("cfdistro dep#t#");
 		wee = replace(baos.toString(),chr(0027),"","all");
-		debug(wee);
-		assertTrue(find("build",wee));
+		assertTrue(find("dependency",wee));
 		baos.reset();
 
 		shell.run("ls #t#");
 		wee = replace(baos.toString(),chr(0027),"","all");
-		debug(wee);
 		baos.reset();
 
 		shell.run("ls#t#");
 		wee = replace(baos.toString(),chr(0027),"","all");
-		debug(wee);
 		baos.reset();
 
 		shell.run("test#t#");
 		wee = replace(baos.toString(),chr(0027),"","all");
-		debug(wee);
 		baos.reset();
 
 		shell.run("testplug ro#t# #n#");
 		wee = replace(baos.toString(),chr(0027),"","all");
-		debug(wee);
 		baos.reset();
 
 		shell.run("testplug o#t#");
 		wee = replace(baos.toString(),chr(0027),"","all");
-		debug(wee);
 		baos.reset();
 
 	}

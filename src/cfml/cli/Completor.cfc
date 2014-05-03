@@ -1,16 +1,31 @@
+/**
+ * completion handler
+ * @author Denny Valliant
+ **/
 component output="false" persistent="false" {
 
+	// command list, containing namespaceless commands and available namespaces
 	commandlist = createObject("java","java.util.TreeSet");
 
+	/**
+	 * constructor
+	 * @commandHandler.hint CommandHandler this completor is attached to
+	 **/
 	function init(commandHandler) {
 		variables.commandHandler = arguments.commandHandler;
 		variables.commandlist.addAll(commandHandler.listCommands().split(','));
 		variables.commands = commandHandler.getCommands();
 	}
 
+	/**
+	 * populate completion candidates and return cursor position
+	 * @buffer.hint text so far
+	 * @cursor.hint cursor position
+	 * @candidates.hint tree to populate with completion candidates
+ 	 **/
 	function complete(String buffer, numeric cursor, candidates)  {
 		var start = isNull(buffer) ? "" : buffer;
-		var args = rematch("'.*?'|"".*?""|\S+",start);
+		var args = rematch("'.*?'|"".*?""|\S+",line);
 		var prefix = args.size() > 0 && structKeyExists(commands,args[1]) ? args[1] : "";
 		var startIndex = 0;
 		var isArgument = false;
@@ -90,11 +105,18 @@ component output="false" persistent="false" {
         return (candidates.size() == 0) ? (-1) : startIndex;
 	}
 
+	/**
+	 * populate completion candidates for parameter values
+	 * @paramName.hint param name
+	 * @paramType.hint type of parameter (boolean, etc.)
+	 * @paramSoFar.hint text typed so far
+	 * @candidates.hint tree to populate with completion candidates
+ 	 **/
 	private function paramValueCompletion(String paramName, String paramType, String paramSoFar, required candidates) {
 		switch(paramType) {
 			case "Boolean" :
-           		treeAddIfMatch("true",paramSoFar,candidates);
-           		treeAddIfMatch("false",paramSoFar,candidates);
+           		addCandidateIfMatch("true",paramSoFar,candidates);
+           		addCandidateIfMatch("false",paramSoFar,candidates);
 				break;
 		}
 		switch(paramName) {
@@ -108,24 +130,32 @@ component output="false" persistent="false" {
 		}
 	}
 
+	/**
+	 * populate directory parameter value completion candidates
+	 * @startsWith.hint text typed so far
+	 * @candidates.hint tree to populate with completion candidates
+ 	 **/
 	private function directoryCompletion(String startsWith, required candidates) {
 		startsWith = replace(startsWith,"\","/","all");
 		if(startsWith == "") {
 			startsWith = commandHandler.getShell().pwd();
 		}
-		var dirs = directoryList(getDirectoryFromPath(startsWith),false,"query");
-		for(dir in dirs) {
-			if(dir.type=="dir" && refindNoCase("^#startsWith#",dir.directory&"/"&dir.name)) {
-				if(dir.name != "/") {
-					candidates.add(dir.directory&"/"&dir.name&"/");
-				} else {
-					candidates.add(dir.directory);
-				}
+		var files = directoryList(getDirectoryFromPath(startsWith));
+		for(file in files) {
+			if(file.startsWith(startsWith)) {
+				if(directoryExists(file))
+					candidates.add(file&"/");
 			}
 		}
 		variables.partialCompletion = true;
 	}
 
+
+	/**
+	 * populate file parameter value completion candidates
+	 * @startsWith.hint text typed so far
+	 * @candidates.hint tree to populate with completion candidates
+ 	 **/
 	private function fileCompletion(String startsWith, required candidates) {
 		startsWith = replace(startsWith,"\","/","all");
 		if(startsWith == "") {
@@ -134,43 +164,24 @@ component output="false" persistent="false" {
 		var files = directoryList(getDirectoryFromPath(startsWith));
 		for(file in files) {
 			if(file.startsWith(startsWith)) {
-				candidates.add(file);
+				if(fileExists(file))
+					candidates.add(file);
 			}
 		}
 	}
 
-	private function treeAddIfMatch(required match, required startsWith, required tree) {
+	/**
+	 * add a value completion candidate if it matches what was typed so far
+	 * @match.hint text to compare as match
+	 * @startsWith.hint text typed so far
+	 * @candidates.hint tree to populate with completion candidates
+ 	 **/
+	private function addCandidateIfMatch(required match, required startsWith, required candidates) {
 		match = lcase(match);
 		startsWith = lcase(startsWith);
 		if(match.startsWith(startsWith) || len(startsWith) == 0) {
-			tree.add(match);
+			candidates.add(match);
 		}
 	}
-
-/*
-	function init(commands) {
-		variables.commands.addAll(arguments.commands.split(','));
-	}
-
-	function complete(String buffer, numeric cursor, candidates)  {
-		var start = isNull(buffer) ? "" : buffer;
-       	var matches = commands.tailSet(start);
-        for (var i = matches.iterator(); i.hasNext();) {
-            var can = i.next();
-            if (!(can.startsWith(start))) {
-                break;
-            }
-            candidates.add(can);
-        }
-        if (candidates.size() == 1) {
-        	can = candidates.get(0) & " ";
-        	candidates.clear();
-        	candidates.add(can);
-        }
-        // the index of the completion is always from the beginning of
-        // the buffer.
-        return (candidates.size() == 0) ? (-1) : 0;
-	}
-*/
 
 }

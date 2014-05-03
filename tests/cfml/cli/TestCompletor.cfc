@@ -31,7 +31,6 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
 		assertTrue(candidates.contains("command="));
 		assertFalse(candidates.contains("help"));
-		request.debug(cursor);
 		assertEquals(5,cursor);
 		candidates.clear();
 
@@ -44,32 +43,32 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 
 		cmdline = "dir ";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
-		assertTrue(candidates.contains("path"));
+		assertTrue(candidates.contains("directory"));
 		assertTrue(candidates.contains("recurse"));
 		assertEquals(4,cursor);
 		candidates.clear();
 
-		cmdline = "dir path=blah ";
+		cmdline = "dir directory=blah ";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
-		assertFalse(candidates.contains("path"));
-		assertFalse(candidates.contains("path="));
+		assertFalse(candidates.contains("directory"));
+		assertFalse(candidates.contains("directory="));
 		assertTrue(candidates.contains("recurse="));
-		assertEquals(14,cursor);
+		assertEquals(19,cursor);
 		candidates.clear();
 
-		cmdline = "dir path=blah recurse=";
+		cmdline = "dir directory=blah recurse=";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
 		assertTrue(candidates.contains("true"));
 		assertTrue(candidates.contains("false"));
-		assertEquals(22,cursor);
+		assertEquals(27,cursor);
 		candidates.clear();
 
-		cmdline = "dir path=blah recurse=tr";
+		cmdline = "dir directory=blah recurse=tr";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
 		debug(candidates);
 		assertTrue(candidates.contains("true "));
 		assertFalse(candidates.contains("false "));
-		assertEquals(22,cursor);
+		assertEquals(27,cursor);
 		candidates.clear();
 
 		cmdline = "cfdistro ";
@@ -96,8 +95,15 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 		cmdline = "cfdistro dependency ";
 		cursor = completor.complete(cmdline,len(cmdline),candidates);
 		debug(candidates);
-		assertTrue(candidates.contains("dependency"));
+		assertTrue(candidates.contains("artifactId"));
 		assertTrue(candidates.contains("exclusions"));
+		assertEquals(len(cmdline),cursor);
+		candidates.clear();
+
+		cmdline = "init";
+		cursor = completor.complete(cmdline,len(cmdline),candidates);
+		debug(candidates);
+		assertTrue(candidates.contains("init"));
 		assertEquals(len(cmdline),cursor);
 		candidates.clear();
 

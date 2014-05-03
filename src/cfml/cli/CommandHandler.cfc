@@ -1,33 +1,41 @@
+/**
+ * Command handler
+ * @author Denny Valliant
+ **/
 component output="false" persistent="false" {
 
 	commands = {};
+	commandAliases = {};
+	namespaceHelp = {};
 	thisdir = getDirectoryFromPath(getMetadata(this).path);
+	java = {
+		System : createObject("java", "java.lang.System")
+		,StringReader : createObject("java","java.io.StringReader")
+		,StreamTokenizer : createObject("java","java.io.StreamTokenizer")
+	}
+	cr = java.System.getProperty("line.separator");
 
-	function init(shell) {
+	/**
+	 * constructor
+	 * @shell.hint shell this command handler is attached to
+	 **/
+	function init(required shell) {
 		variables.shell = shell;
 		reader = shell.getReader();
         var completors = createObject("java","java.util.LinkedList");
 		initCommands();
+		commandGrammar = new commandgrammar.CommandGrammar();
+		commandGrammar.setCommands(getCommands());
 		var completor = createDynamicProxy(new Completor(this), ["jline.Completor"]);
         reader.addCompletor(completor);
-/*
-//        reader.addCompletor(createObject("java","jline.MultiCompletor").init([completor]));
-
- 		var completor2 = createDynamicProxy(new completor("bello,bell,belli"), ["jline.Completor"]);
-        completors.add(createObject("java","jline.MultiCompletor").init([completor,completor2]));
-
-        completors.add(createObject("java","jline.SimpleCompletor").init(
-        	["clear","exit","version","server.coldfusion.productname","server.railo.version"]
-       	));
-        completors.add(createObject("java","jline.FileNameCompletor").init());
-
-        reader.addCompletor(createObject("java","jline.ArgumentCompletor").init(completors));
-*/
 		return this;
 	}
 
+	/**
+	 * initialize the commands
+	 **/
 	function initCommands() {
-		var varDirs = DirectoryList(thisdir&"/command", false, "name");
+		var varDirs = DirectoryList(thisdir & "/command", false, "name");
 		for(var dir in varDirs){
 			if(listLast(dir,".") eq "cfc") {
 				loadCommands("","command.#listFirst(dir,'.')#");
@@ -37,70 +45,207 @@ component output="false" persistent="false" {
 		}
 	}
 
-	function loadCommands(prefix,cfc) {
+	/**
+	 * load commands into a namespace from a cfc
+	 * @namespace.hint namespace these commands belong in
+	 * @cfc.hint cfc to read for commands
+	 **/
+	function loadCommands(namespace,cfc) {
 		var cfc = createObject(cfc).init(shell);
-		for(var fun in getMetadata(cfc).functions) {
-			if(fun.name != "init") {
-				commands[prefix][fun.name].cfc = cfc;
-				commands[prefix][fun.name].parameters = fun.parameters;
+		var cfcMeta = getMetadata(cfc);
+		for(var fun in cfcMeta.functions) {
+			if(fun.name != "init" && fun.access != "private") {
+				var commandname = isNull(fun["command.name"]) ? fun.name : fun["command.name"];
+				for(var param in fun.parameters) {
+					if(isNull(param.hint)) {
+						param.hint = "No help available";
+					}
+				}
+				commands[namespace][commandname].parameters = fun.parameters;
+				commands[namespace][commandname].functionName = fun.name;
+				commands[namespace][commandname].cfc = cfc;
+				commands[namespace][commandname].hint = fun.hint;
+				var aliases = isNull(fun["command.aliases"]) ? [] : listToArray(fun["command.aliases"]);
+				for(var alias in aliases) {
+					commands[namespace][alias] = commands[namespace][commandname];
+				}
 			}
+		}
+		if(namespace != "") {
+			namespaceHelp[namespace] = !isNull(cfcMeta.hint) ? cfcMeta.hint : "";
 		}
 	}
 
+	/**
+	 * get help information
+	 * @namespace.hint namespace (or namespaceless command) to get help for
+ 	 * @command.hint command to get help for
+ 	 **/
+	function help(String namespace="", String command="")  {
+		if(namespace != "" && command == "") {
+			if(!isNull(commands[""][namespace])) {
+				command = namespace;
+				namespace = "";
+			} else if(!isNull(commandAliases[""][namespace])) {
+				command = commandAliases[""][namespace];
+				namespace = "";
+			} else if (isNull(commands[namespace])) {
+				shell.printError({message:"No help found for #namespace#"});
+				return "";
+			}
+		}
+		var result = shell.ansi("green","HELP #namespace# [command]") & cr;
+		if(namespace == "" && command == "") {
+			for(var commandName in commands[""]) {
+				var helpText = commands[""][commandName].hint;
+				result &= chr(9) & shell.ansi("cyan",commandName) & " : " & helpText & cr;
+			}
+			for(var ns in namespaceHelp) {
+				var helpText = namespaceHelp[ns];
+				result &= chr(9) & shell.ansi("black,cyan_back",ns) & " : " & helpText & cr;
+			}
+		} else {
+			if(!isNull(commands[namespace][command])) {
+				result &= getCommandHelp(namespace,command);
+			} else if (!isNull(commands[namespace])){
+				var helpText = namespaceHelp[namespace];
+				result &= chr(9) & shell.ansi("cyan",namespace) & " : " & helpText & cr;
+				for(var commandName in commands[namespace]) {
+					var helpText = commands[namespace][commandName].hint;
+					result &= chr(9) & shell.ansi("cyan",commandName) & " : " & helpText & cr;
+				}
+			} else {
+				shell.printError({message:"No help found for #namespace# #command#"});
+				return "";
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * get command help information
+	 * @namespace.hint namespace (or namespaceless command) to get help for
+ 	 * @command.hint command to get help for
+ 	 **/
+	private function getCommandHelp(String namespace="", String command="")  {
+		var result ="";
+		var metadata = commands[namespace][command];
+		result &= chr(9) & shell.ansi("cyan",command) & " : " & metadata.hint & cr;
+		result &= chr(9) & shell.ansi("magenta","Arguments") & cr;
+		for(var param in metadata.parameters) {
+			result &= chr(9);
+			if(param.required)
+				result &= shell.ansi("red","required ");
+			result &= param.type & " ";
+			result &= shell.ansi("magenta",param.name)
+			if(!isNull(param.default))
+				result &= "=" & param.default & " ";
+			if(!isNull(param.hint))
+				result &= " (#param.hint#)";
+		 	result &= cr;
+		}
+		return result;
+	}
+
+	/**
+	 * return the shell
+ 	 **/
 	function getShell() {
 		return variables.shell;
 	}
 
+	/**
+	 * run a command line
+	 * @line.hint line to run
+ 	 **/
 	function runCommandline(line) {
-		var args = rematch("'.*?'|"".*?""|\S+",line);
-		var prefix = structKeyExists(commands,args[1]) ? args[1] : "";
- 		if(prefix eq "") {
-			command = args[1];
-			arrayDeleteAt(args,1);
-		} else {
-			if(arrayLen(args) >= 2) {
-				command = args[2];
-				arrayDeleteAt(args,1);
-				arrayDeleteAt(args,1);
-			} else {
-				if(!StructKeyExists(commands,prefix)) {
-					shell.printError({message:"'#prefix#' is unknown.  Did you mean one of these: #listCommands()#?"});
-					return;
-				}
-				if(structKeyExists(commands[prefix],prefix)) {
-					command = prefix;
-					arrayDeleteAt(args,1);
-				} else {
-					return "available actions: #structKeyList(commands[prefix])#";
-				}
-			}
+		var parsed = commandGrammar.parse(line);
+		var commandLine = parsed.tree;
+		var namespace = isNull(commandLine.namespace()) ? "" : commandLine.namespace().getText();
+		var command = commandLine.command().commandName().getText();
+		var args = commandLine.command().arguments().argument();
+		if(command == "<missing commandname>") {
+			return "available actions: #structKeyList(commands[namespace])#";
 		}
-		if(!StructKeyExists(commands[prefix],command)) {
-			shell.printError({message:"'#prefix# #command#' is unknown.  Did you mean one of these: #structKeyList(commands[prefix])#?"});
+
+		if(arrayLen(parsed.messages)) {
+			var lastMessage = parsed.messages[arrayLen(parsed.messages)];
+			var expected = lastMessage.parse.tree != ""
+					? "expected " & lastMessage.parse.tree
+					: lastMessage.message ;
+			throw(type="command.exception",
+				message=expected,
+				extendedInfo=1&":"&lastMessage.offendingSymbol.startIndex);
+		}
+		if(isNull(commands[namespace][command])) {
+			shell.printError({message:"'#namespace# #command#' is unknown.  Did you mean one of these: #structKeyList(commands[namespace])#?"});
 			return;
 		}
-		if(isNull(args) || arrayLen(args) == 0) {
-			return commands[prefix][command].cfc[command]();
+		var unnamedArgs = [];
+		var namedArgs = {};
+		var requiredParams = [];
+		for(var param in commands[namespace][command].parameters) {
+        	if(param.required) {
+				arrayAppend(requiredParams,param);
+        	}
+		}
+       	for(var arg in args) {
+     		var value = unescapeString(arg.value().getText());
+       		if(!isNull(arg.argumentName())) {
+        		namedArgs[param.name] = value;
+      			if(param.required) {
+        			arrayDelete(requiredParams,param);
+      			}
+       		} else {
+ 				arrayAppend(unnamedArgs,value);
+       		}
+       	}
+       	for(var x = arrayLen(requiredParams); x gt arrayLen(args); x--) {
+       		var arg = shell.ask("Enter #requiredParams[x].name# (#requiredParams[x].hint#) : ");
+			arrayAppend(unnamedArgs,arg.value().getText());
+       	}
+		if(len(StructKeyList(namedArgs))) {
+			return callCommand(namespace,command,namedArgs);
+		}
+		return callCommand(namespace,command,unnamedArgs);
+	}
+
+	/**
+	 * unescape a string literal, so quotes and newlines'n stuff are correct
+ 	 **/
+	function unescapeString(required stringLiteral) {
+		if(left(stringLiteral,1)=='"' || left(stringLiteral,1)=="'") {
+			var st = java.StreamTokenizer.init(java.StringReader.init(stringLiteral));
+			st.nextToken();
+			stringLiteral = isNull(st.sval) ? stringLiteral : st.sval ;
+		}
+		return stringLiteral ;
+	}
+
+	/**
+	 * call a command
+ 	 **/
+	function callCommand(namespace, command, args) {
+		var functionName = commands[namespace][command].functionName;
+		var runCFC = commands[namespace][command].cfc;
+		args = isNull(args) ? [] : args;
+		if(args.size()) {
+			return runCFC[functionName](argumentCollection=args);
 		} else {
-			var namedArgs = {};
-			for(var param in commands[prefix][command].parameters) {
-            	for(var arg in args) {
-            		if(findNoCase(param.name&"=",arg)) {
-	            		namedArgs[param.name] = replaceNoCase(arg,"#param.name#=","");
-            		}
-            	}
-			}
-			if(len(StructKeyList(namedArgs))) {
-				return commands[prefix][command].cfc[command](argumentCollection=namedArgs);
-			}
-			return commands[prefix][command].cfc[command](argumentCollection=args);
+			return runCFC[functionName]();
 		}
 	}
 
+	/**
+	 * return a list of base commands (includes namespaces)
+ 	 **/
 	function listCommands() {
 		return listAppend(structKeyList(commands[""]),structKeyList(commands));
 	}
 
+	/**
+	 * return the namespaced command structure
+ 	 **/
 	function getCommands() {
 		return commands;
 	}

@@ -9,6 +9,7 @@
 	
 	<target name="build.testwar" depends="cfdistro.build">
 		<dependency groupId="org.mxunit" artifactId="core" version="${mxunit.version}" mapping="/mxunit" />
+		<dependency groupId="org.jboss.aesh" artifactId="aesh" unzip="false" version="0.52" type="jar" dest="${lib.dir}" />
 		<mapping virtual="/cfml" physical="@src.dir@/cfml" />
 		<mapping virtual="/tests" physical="@src.dir@/../tests" />
 	</target>

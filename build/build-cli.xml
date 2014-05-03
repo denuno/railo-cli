@@ -49,8 +49,9 @@
         	compliance="${railo.javac.compiler}" classpath="${toString:classpath}" />
 		<!-- icon for cli -->
         <copy file="${src.dir}/resources/railo.png" todir="${temp.dir}/cli/bin/railocli" />
-        <copy file="${lib.dir}/jline-1.0.jar" todir="${railo.lib.dir}" />
-        <copy file="${lib.dir}/jansi-1.11.jar" todir="${railo.lib.dir}" />
+        <copy todir="${railo.lib.dir}">
+        	<fileset dir="${lib.dir}" includes="*.jar" />
+    	</copy>
         <copy todir="${railo.lib.dir}/cfml/cli">
         	<fileset dir="${src.dir}/cfml/cli/"/>
     	</copy>
@@ -77,6 +78,7 @@
 		<!--  create the cfml zip -->
 		<zip destfile="${temp.dir}/cli/cfml.zip">
 	        <fileset dir="${src.dir}/cfml"/>
+	        <zipfileset file="${temp.dir}/version" fullpath="cli/version"/>
 		</zip>
 		<!--  create the libs zip including cli loader, optionally use pack200 -->
 		<antcontrib:if>
@@ -118,6 +120,7 @@
 		<delete file="${temp.dir}/cli/railocli.jar" />
 		<delete file="${temp.dir}/runwar.jar" />
 
+    	<echo file="${temp.dir}/version" message="${cli.version}" />
         <copy file="${src.dir}/java/cliloader/cli.properties" todir="${temp.dir}/cli/bin/cliloader" />
 		<jar destfile="${runcli.jar.file}" filesetmanifest="mergewithoutmain" level="9">
 			<manifest>
@@ -127,6 +130,7 @@
 			<fileset file="${temp.dir}/cli/libs.zip" />
 			<fileset file="${temp.dir}/cli/cfml.zip" />
 			<fileset dir="${temp.dir}/cli/bin" />
+	        <zipfileset file="${temp.dir}/version" fullpath="cli/version"/>
 		</jar>
  	</target>
 
@@ -153,6 +157,11 @@
 
  	<target name="build.cli.jre" depends="build.cli">
  		<echo message="bundling ${mvn.jre.version} jre" />
+		<dependency groupId="oracle" artifactId="jre" version="${mvn.jre.version}" type="zip" classifier="win32" />
+		<dependency groupId="oracle" artifactId="jre" version="${mvn.jre.version}" type="zip" classifier="win64" />
+		<dependency groupId="oracle" artifactId="jre" version="${mvn.jre.version}" type="zip" classifier="linux32" />
+		<dependency groupId="oracle" artifactId="jre" version="${mvn.jre.version}" type="zip" classifier="linux64" />
+		<dependency groupId="oracle" artifactId="jre" version="${mvn.jre.version}" type="zip" classifier="darwin64" />
 		<zip destfile="${dist.dir}/cli/cli-jre-win32.zip">
 			<zipgroupfileset file="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-win32.zip"/>
 	        <fileset file="${dist.dir}/cli/railo.exe" />
