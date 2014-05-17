@@ -22,6 +22,7 @@
 		<dependency groupId="org.getrailo" artifactId="railo-jar" version="${railo.version.long}" dest="${temp.dir}/railolibs" unzip="false" type="jar" />
 		<path id="classpath">
 			<fileset dir="${railo.lib.dir}"/>
+			<fileset dir="${cfdistro.lib.dir}"/>
 		</path>
         <javac-ecj srcdir="${src.dir}/java" destdir="${temp.dir}/cli/bin" maxmemory="128M"
         	compliance="${railo.javac.compiler}" classpath="${toString:classpath}" />
