@@ -14,13 +14,12 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 
 	public void function testShell()  {
     	var baos = createObject("java","java.io.ByteArrayOutputStream").init();
-    	var printWriter = createObject("java","java.io.PrintWriter").init(baos);
     	var n = chr(10);
-    	var line = "ls" &n& "q" & n;
+    	var line = "ls" &n& "quite" & n;
     	var inStream = createObject("java","java.io.ByteArrayInputStream").init(line.getBytes());
-		var shell = new cfml.cli.Shell(inStream,printWriter);
+		var shell = new cfml.cli.Shell(inStream,baos);
 		shell.run();
-//		debug(baos.toString());
+		debug(shell.unansi(baos.toString()));
 
 	}
 
@@ -39,48 +38,46 @@ component name="TestShell" extends="mxunit.framework.TestCase" {
 	}
 
 	public void function testShellComplete()  {
-    	var baos = createObject("java","java.io.ByteArrayOutputStream").init();
-    	var printWriter = createObject("java","java.io.PrintWriter").init(baos);
+    	var outputstream = createObject("java","java.io.ByteArrayOutputStream").init();
     	var t = chr(9);
     	var n = chr(10);
-		var shell = new cfml.cli.Shell(printWriter=printWriter);
-
+		var shell = new cfml.cli.Shell(outputStream=outputstream);
 
 		shell.run("hel#t#");
-		wee = replace(baos.toString(),chr(0027),"","all");
-		//request.debug(wee);
-		assertTrue(find("help",wee));
-		baos.reset();
+		wee = shell.unansi(outputstream.toString());
+		request.debug(wee);
+		assertEquals("help",wee);
+		outputstream.reset();
 
 		shell.run("cfdistro #t#");
-		wee = replace(baos.toString(),chr(0027),"","all");
+		wee = shell.unansi(outputstream.toString());
 		assertTrue(find("war",wee));
-		baos.reset();
+		outputstream.reset();
 
 		shell.run("cfdistro dep#t#");
-		wee = replace(baos.toString(),chr(0027),"","all");
+		wee = shell.unansi(outputstream.toString());
 		assertTrue(find("dependency",wee));
-		baos.reset();
+		outputstream.reset();
 
 		shell.run("ls #t#");
-		wee = replace(baos.toString(),chr(0027),"","all");
-		baos.reset();
+		wee = shell.unansi(outputstream.toString());
+		outputstream.reset();
 
 		shell.run("ls#t#");
-		wee = replace(baos.toString(),chr(0027),"","all");
-		baos.reset();
+		wee = shell.unansi(outputstream.toString());
+		outputstream.reset();
 
 		shell.run("test#t#");
-		wee = replace(baos.toString(),chr(0027),"","all");
-		baos.reset();
+		wee = shell.unansi(outputstream.toString());
+		outputstream.reset();
 
 		shell.run("testplug ro#t# #n#");
-		wee = replace(baos.toString(),chr(0027),"","all");
-		baos.reset();
+		wee = shell.unansi(outputstream.toString());
+		outputstream.reset();
 
 		shell.run("testplug o#t#");
-		wee = replace(baos.toString(),chr(0027),"","all");
-		baos.reset();
+		wee = shell.unansi(outputstream.toString());
+		outputstream.reset();
 
 	}
 

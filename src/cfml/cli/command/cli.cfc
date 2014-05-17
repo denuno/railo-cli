@@ -6,9 +6,8 @@
  **/
 component output="false" persistent="false" trigger="" {
 
-	function init(shell) {
+	function init(shell) output="false" {
 		variables.shell = shell;
-		reader = shell.getReader();
 		cr = chr(10);
 		return this;
 	}
@@ -19,8 +18,15 @@ component output="false" persistent="false" trigger="" {
  	 * @command.hint command to get help for
  	 * @command.aliases h,?
   	 **/
-	function help(String namespace="", String command="")  {
+	function help(String namespace="", String command="") output="false" {
 		return shell.help(namespace,command);
+	}
+
+	/**
+	 * echo arguments (test function)
+	 **/
+	function echoargs() output="false" {
+		return arguments;
 	}
 
 	/**
@@ -30,15 +36,13 @@ component output="false" persistent="false" trigger="" {
 	 * @recurse.hint recursively list
  	 * @command.aliases ls, directory
 	 **/
-	function dir(String directory="", Boolean recurse=false)  {
+	function dir(String directory="", Boolean recurse=false) output="false" {
 		var result = "";
 		directory = trim(directory) == "" ? shell.pwd() : directory;
 		if(!directoryExists(directory)) {
 			throw(type="command.exception", message="Directory does not exist: " & directory);
 		}
-		for(var d in directoryList(directory,recurse)) {
-			result &= shell.ansi("cyan",d) & cr;
-		}
+		for(var d in directoryList(directory,recurse)) {result &= shell.ansi("cyan",d) & cr;}
 		return result;
 	}
 
@@ -127,14 +131,14 @@ component output="false" persistent="false" trigger="" {
 	 **/
 	function update(Boolean force=false) {
 		var temp = shell.getTempDir();
-		http url="http://cfmlprojects.org/artifacts/org/coldbox/box.cli/maven-metadata.xml" file="#temp#/maven-metadata.xml";
+		http url="http://cfmlprojects.org/artifacts/org/getrailo/railo.cli/maven-metadata.xml" file="#temp#/maven-metadata.xml";
 		var mavenData = xmlParse("#temp#/maven-metadata.xml");
 		var latest = xmlSearch(mavendata,"/metadata/versioning/versions/version[last()]/text()");
 		latest = latest[1].xmlValue;
 		if(latest!=shell.version() || force) {
-			var result = shell.callCommand("cfdistro","dependency",{artifactId:"box.cli",groupId:"org.coldbox",version=latest,classifier="cfml"});
+			var result = shell.callCommand("cfdistro","dependency",{artifactId:"railo.cli",groupId:"org.getrailo",version=latest,classifier="cfml"});
 		}
-		zip action="unzip" file="#shell.getArtifactsDir()#/org/coldbox/box.cli/#latest#/box.cli-#latest#-cfml.zip"
+		zip action="unzip" file="#shell.getArtifactsDir()#/org/getrailo/railo.cli/#latest#/railo.cli-#latest#-cfml.zip"
 		 destination="#shell.getHomeDir()#/cfml";
 		return "installed #latest# (#result#)";
 	}
@@ -180,8 +184,19 @@ component output="false" persistent="false" trigger="" {
 	}
 
 	/**
-	* Exit
-	* @command.aliases quit,q,e
+	 * get all or set system property
+	 **/
+	function set(prop="")  {
+		if(prop == "") {
+			return createObject("java","java.lang.System").getProperties();
+		} else {
+			shell.env(prop);
+		}
+	}
+
+	/**
+	* Exit the shell
+	* @command.aliases quit,q
 	*/
 	function exit()  {
 		shell.exit();

@@ -6,18 +6,22 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
-
 import java.awt.Image;
+
 import javax.imageio.ImageIO;
 
 import java.lang.reflect.Method;
+import java.net.URL;
 
 import javax.servlet.ServletException;
 import javax.servlet.jsp.JspException;
 
+import org.jboss.logging.Logger;
+
 import railo.loader.engine.CFMLEngine;
 import railo.loader.engine.CFMLEngineFactory;
 import railo.loader.util.Util;
+import runwar.Start;
 
 public class CLIMain {
 /**
@@ -28,10 +32,48 @@ public class CLIMain {
  * server-name - server name (default:localhost)
  * uri - host/scriptname/query
  * cookie - cookies (same pattern as query string)
- * form - form (same pattern as query string)
  */
+	private static Logger log = Logger.getLogger("CLIMain");
 	
-	
+	/**
+	 * @param uri 
+	 * @param debug 
+	 * @param args
+	 * @throws JspException 
+	 */
+	public static void run(File webroot, File configServerDir, File configWebDir, String uri, boolean debug) throws ServletException, IOException, JspException {
+		Map<String, String> config=new HashMap<String, String>();
+		config.put("webroot",webroot.getPath());
+		config.put("server-config", configServerDir.getAbsolutePath());
+		config.put("web-config", configWebDir.getAbsolutePath());
+		config.put("uri", new File(uri).toURI().toURL().toExternalForm().replaceAll("file:/(\\w:)", "file://$1"));
+		String servletName=config.get("servlet-name");
+		if(Util.isEmpty(servletName,true))servletName="CFMLServlet";
+		
+		Map<String,Object> attributes=new HashMap<String, Object>();
+		Map<String, String> initParameters=new HashMap<String, String>();
+		initParameters.put("railo-server-directory", configServerDir.getAbsolutePath());
+		initParameters.put("configuration", configWebDir.getAbsolutePath());
+		
+		CLIContext servletContext = new CLIContext(webroot, configWebDir, attributes, initParameters, 1, 0);
+		ServletConfigImpl servletConfig = new ServletConfigImpl(servletContext, servletName);
+		PrintStream printStream = new PrintStream(new ByteArrayOutputStream());
+		PrintStream origOut = System.out;
+		// hide engine startup stuff
+		if(!debug) {
+			System.setOut(printStream);
+		}
+		CFMLEngine engine = null;
+		try{
+			engine = CFMLEngineFactory.getInstance(servletConfig);
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			System.setOut(origOut);
+		}
+		printStream.close();
+		engine.cli(config,servletConfig);
+	}
 	/**
 	 * @param args
 	 * @throws JspException 
@@ -96,8 +138,12 @@ public class CLIMain {
 				raw=args[i].trim();
 				if(raw.length() == 0) continue;
 				if(!raw.startsWith("-")) {
-					raw = new File(raw).getCanonicalFile().getPath();
-					config.put("uri",raw);
+					File rawFile = new File(raw).getCanonicalFile();
+					// otherwise it begins a command line
+					if(rawFile.exists()){
+						raw = rawFile.getPath();
+						config.put("uri",raw);
+					}
 					break;
 				}
 			}
@@ -110,20 +156,6 @@ public class CLIMain {
 		} else {
 			System.setProperty("java.library.path",libDir.getPath() + ":" + System.getProperty("java.library.path"));
 		}
-        String osName = System.getProperties().getProperty("os.name");
-        if(osName != null && osName.startsWith("Mac OS X"))
-        {   
-            try{
-            	Image dockIcon = ImageIO.read(CLIMain.class.getResource("/railocli/railo.png"));
-            	Class<?> appClass = Class.forName("com.apple.eawt.Application");
-            	Method getAppMethod = appClass.getMethod("getApplication");
-            	Object appInstance = getAppMethod.invoke(null);
-            	Method dockMethod = appInstance.getClass().getMethod("setDockIconImage", java.awt.Image.class);
-            	dockMethod.invoke(appInstance, dockIcon);		
-            }
-            catch(Exception e) { /* e.printStackTrace(); */ }
-        }
-
 		if(debug) {
 			System.out.println("Config:" + config);
 		}
@@ -140,6 +172,7 @@ public class CLIMain {
 		ServletConfigImpl servletConfig = new ServletConfigImpl(servletContext, servletName);
 		PrintStream printStream = new PrintStream(new ByteArrayOutputStream());
 		PrintStream origOut = System.out;
+		// hide engine startup stuff
 		if(!debug) {
 			System.setOut(printStream);
 		}

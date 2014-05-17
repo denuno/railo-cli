@@ -1,45 +1,23 @@
 <project name="build-cli" default="build.cli" xmlns:antcontrib="antlib:net.sf.antcontrib" basedir=".">
 
-	<property name="cli.version" value="0.4.3" />
-	<property name="cli.packager.name" value="cfmlprojects.org" />
-	<property name="cli.packager.email" value="cfml@cfmlprojects.org" />
-	<property name="cli.use.pack200" value="true" />
-	<property name="railo.version.long" value="4.2.0.007" />
-	<property name="mvn.repo.id" value="cfdistro.repo.local" />
-	<property name="mvn.jre.7.version" value="1.7.0_51" />
-	<property name="mvn.jre.6.version" value="1.6.0_41" />
-	<property name="mvn.jre.version" value="${mvn.jre.7.version}" />
-	<property name="maven.repo.local" location="${cfdistro.basedir}/artifacts" />
-	<property name="rpm.repo" value="${maven.repo.local}/RPMS/noarch" />
-
 	<target name="build.cli" description="creates an jar with the libs cli">
 		<antcontrib:var name="cli.version" value="${cli.version}-${railo.version.long}" />
 		<version-splitter version="${railo.version.long}" property="railo.version" bump="" />
 		<property name="runcli.jar.file" value="${dist.dir}/cli/railo-cli.jar"/>
+   		<delete dir="${temp.dir}" />
    		<delete dir="${dist.dir}/cli" />
    		<delete dir="${temp.dir}/cli" />
 		<mkdir dir="${temp.dir}/cli" />
 		<mkdir dir="${dist.dir}/cli" />
-        <!--  create no asm jetty runner -->
-		<mkdir dir="${temp.dir}/cli/jetty" />
-	    <unzip dest="${temp.dir}/cli/jetty">
-			<!-- <fileset file="${railo.lib.dir}/javax.servlet.jar"/> --> 
-			<fileset dir="${cfdistro.basedir}/lib/" includes="${jetty-runner.jar}" /> 
-	    </unzip>
-	    <delete dir="${temp.dir}/cli/jetty/org/objectweb/" />
-		<zip destfile="${temp.dir}/cli/${jetty-runner.jar}" level="9">
-			<fileset dir="${temp.dir}/cli/jetty" /> 
-		</zip>
-		<pom-and-deploy pomid="jerry-runner-noasm.pom" packaging="jar" artifact="${temp.dir}/cli/${jetty-runner.jar}" buildtype="release"
-		 groupId="org.eclipse.jetty" artifactId="jetty-runner-noasm" version="${jetty-runner.version}" name="jetty-runner-noasm"/>
-   		<delete dir="${temp.dir}/cli/jetty" />
-        <!--  copy in runwar to set a custom icon, etc. -->
-        <copy file="${cfdistro.basedir}/lib/runwar-1.0.0.0.jar" todir="${temp.dir}/cli" />
 		<!--  compile the loader and the runner together, tho we will separate them into different jars -->
 		<property name="railo.lib.dir" value="${temp.dir}/railolibs" />
    		<delete dir="${railo.lib.dir}" />
    		<mkdir dir="${railo.lib.dir}" />
+        <!--  copy in runwar to set a custom icon, etc. 
+        <copy file="${cfdistro.basedir}/lib/runwar-1.0.0.0.jar" todir="${temp.dir}/cli" />
 		<dependency groupId="org.getrailo" artifactId="railo.dep" classifier="javax-servlet" version="${railo.version.major}.0" dest="${railo.lib.dir}" type="jar" unzip="false"/>
+        -->
+		<dependency groupId="org.cfmlprojects" artifactId="runwar" version="${runwar.version}" dest="${railo.lib.dir}" unzip="false" type="jar" />
 		<dependency groupId="org.getrailo" artifactId="railo.libs" version="${railo.version.major}.0" dest="${railo.lib.dir}" unzip="true"/>
 		<dependency groupId="org.getrailo" artifactId="railo-jar" version="${railo.version.long}" dest="${temp.dir}/railolibs" unzip="false" type="jar" />
 		<path id="classpath">
@@ -48,21 +26,12 @@
         <javac-ecj srcdir="${src.dir}/java" destdir="${temp.dir}/cli/bin" maxmemory="128M"
         	compliance="${railo.javac.compiler}" classpath="${toString:classpath}" />
 		<!-- icon for cli -->
-        <copy file="${src.dir}/resources/railo.png" todir="${temp.dir}/cli/bin/railocli" />
         <copy todir="${railo.lib.dir}">
         	<fileset dir="${lib.dir}" includes="*.jar" />
     	</copy>
-        <copy todir="${railo.lib.dir}/cfml/cli">
-        	<fileset dir="${src.dir}/cfml/cli/"/>
+        <copy todir="${temp.dir}/cli/bin/resource">
+        	<fileset dir="${src.dir}/resources"/>
     	</copy>
-		<!-- use same icon for runwar -->
-        <zip destfile="${temp.dir}/cli/runwar-1.0.0.0.jar" update="true" level="9">
-        	<zipfileset file="${temp.dir}/cli/bin/railocli/railo.png" fullpath="runwar/icon.png" />
-        </zip>
-        <!-- 
-		<property name="runwar.jar.location" value="${temp.dir}/runwar.jar" />
-		<antcontrib:runtarget target="runwar.jetty.jar"/>
-         -->
        	<!-- we put the loader into a jar and then into libs.zip for classloading reasons -->
 		<jar destfile="${temp.dir}/cli/railocli.jar" filesetmanifest="mergewithoutmain" level="9">
 			<manifest>
@@ -71,13 +40,12 @@
 			<fileset dir="${temp.dir}/cli/bin">
 				<exclude name="cliloader/*" />
 			</fileset>
-			<zipgroupfileset file="${temp.dir}/cli/jetty-runner.jar" />
 		</jar>
 		<delete dir="${temp.dir}/cli/bin/railocli" />
 
 		<!--  create the cfml zip -->
 		<zip destfile="${temp.dir}/cli/cfml.zip">
-	        <fileset dir="${src.dir}/cfml"/>
+	        <fileset dir="${src.dir}/cfml" excludes="**/cfdistro/home/**, **/cfdistro.zip"/>
 	        <zipfileset file="${temp.dir}/version" fullpath="cli/version"/>
 		</zip>
 		<!--  create the libs zip including cli loader, optionally use pack200 -->
@@ -95,8 +63,6 @@
 			            <exclude name="**/org.mortbay.jetty.jar"/>
 			        </fileset>
 			        <fileset file="${temp.dir}/cli/railocli.jar" />
-			        <fileset file="${temp.dir}/cli/runwar.jar" />
-					<fileset file="${temp.dir}/cli/${jetty-runner.jar}" />
 				</copy>
 				<packjars dir="${temp.dir}/packlibs" packdir="${temp.dir}/packlibs/packed"/>
 				<zip destfile="${temp.dir}/cli/libs.zip">
@@ -112,13 +78,10 @@
 			            <exclude name="**/javax.servlet.jar"/>
 			        </fileset>
 			        <fileset file="${temp.dir}/cli/railocli.jar" />
-			        <fileset file="${temp.dir}/cli/runwar.jar" />
-					<fileset file="${temp.dir}/cli/${jetty-runner.jar}" />
 				</zip>
 			</else>
 		</antcontrib:if>
 		<delete file="${temp.dir}/cli/railocli.jar" />
-		<delete file="${temp.dir}/runwar.jar" />
 
     	<echo file="${temp.dir}/version" message="${cli.version}" />
         <copy file="${src.dir}/java/cliloader/cli.properties" todir="${temp.dir}/cli/bin/cliloader" />
@@ -126,11 +89,10 @@
 			<manifest>
 				<attribute name="Main-Class" value="cliloader.LoaderCLIMain" />
 			</manifest>
-			<zipgroupfileset file="${temp.dir}/cli/jetty-runner.jar" />
 			<fileset file="${temp.dir}/cli/libs.zip" />
 			<fileset file="${temp.dir}/cli/cfml.zip" />
 			<fileset dir="${temp.dir}/cli/bin" />
-	        <zipfileset file="${temp.dir}/version" fullpath="cli/version"/>
+	        <zipfileset file="${temp.dir}/version" fullpath="version"/>
 		</jar>
  	</target>
 
@@ -276,19 +238,16 @@ cd $reldir/build
 	<target name="build.cli.rpm" depends="build.cli.bin"  xmlns:redline="antlib:org.redline_rpm">
 		<mkdir dir="${rpm.repo}" />
 		<echo message="Making rpm in ${rpm.repo} Packager:${cli.packager.name} ${cli.packager.email} Version: ${cli.version}" />
-		<redline:rpm destination="${rpm.repo}" release="1"
-			group="org.getrailo" name="railo-cli" version="${cli.version}"
-			packager="${cli.packager.name} ${cli.packager.email}"
-			url="http://getrailo.org">
-			<depends name="java" version=""/>
+		<rpm-create rpm.repo="${rpm.repo}" rpm.release="1"
+			rpm.group="org.getrailo" rpm.name="railo-cli" rpm.version="${cli.version}"
+			rpm.packager="${cli.packager.name} ${cli.packager.email}"
+			rpm.url="http://getrailo.org">
 			<tarfileset file="${dist.dir}/cli/railo" prefix="/usr/bin"
 				 filemode="744" username="root" group="root"/>
-		</redline:rpm>
-		<rpm-repo dir="${rpm.repo}" />
+		</rpm-create>
 	</target>
 
 	<target name="build.cli.deb" depends="build.cli.bin" description="builds a .deb file for debian-based systems">
-	    <taskdef name="deb" classname="com.googlecode.ant_deb_task.Deb" classpathref="build.lib.path"/>
 	   	<echo message="Creating debian .deb file from: ${dist.dir}"/>
 		<property name="deb.repo" value="${cfdistro.basedir}/artifacts/debs/noarch" />
 		<mkdir dir="${deb.repo}"/>

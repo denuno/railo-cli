@@ -5,7 +5,6 @@ component output="false" persistent="false" trigger="" {
 
 	function init(shell) {
 		variables.shell = shell;
-		reader = shell.getReader();
 		thisdir = getDirectoryFromPath(getMetadata(this).path);
 		home = thisdir & "/home";
 		buildprops = {

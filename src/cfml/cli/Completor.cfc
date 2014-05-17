@@ -5,7 +5,7 @@
 component output="false" persistent="false" {
 
 	// command list, containing namespaceless commands and available namespaces
-	commandlist = createObject("java","java.util.TreeSet");
+	commandlist = createObject("java","java.util.ArrayList");
 
 	/**
 	 * constructor
@@ -15,6 +15,7 @@ component output="false" persistent="false" {
 		variables.commandHandler = arguments.commandHandler;
 		variables.commandlist.addAll(commandHandler.listCommands().split(','));
 		variables.commands = commandHandler.getCommands();
+		variables.shell = commandHandler.getShell();
 	}
 
 	/**
@@ -23,85 +24,93 @@ component output="false" persistent="false" {
 	 * @cursor.hint cursor position
 	 * @candidates.hint tree to populate with completion candidates
  	 **/
-	function complete(String buffer, numeric cursor, candidates)  {
-		var start = isNull(buffer) ? "" : buffer;
-		var args = rematch("'.*?'|"".*?""|\S+",line);
-		var prefix = args.size() > 0 && structKeyExists(commands,args[1]) ? args[1] : "";
+	function complete(co)  {
+		try {
+			_complete(co);
+		} catch (any e) {
+			shell.printError(e);
+		}
+	}
+
+	/**
+	 * populate completion candidates and return cursor position
+	 * @buffer.hint text so far
+	 * @cursor.hint cursor position
+	 * @candidates.hint tree to populate with completion candidates
+ 	 **/
+	function _complete(co)  {
+		candidates = createObject("java","java.util.ArrayList");
+		var start = isNull(co.getBuffer()) ? "" : shell.unansi(co.getBuffer());
+		var parsed = commandHandler.getParser().parse(start.replace(shell.unansi(shell.getPrompt()),""));
+		var commandLine = parsed.tree;
+		var prefix = isNull(commandLine.namespace()) ? "" : commandLine.namespace().getText();
+		var command = commandLine.command().commandName().getText();
+		var args = commandLine.command().arguments().argument();
+		if(trim(command) == "<missing commandname>") {
+			command = "";
+		}
 		var startIndex = 0;
 		var isArgument = false;
-		var lastArg = args.size() > 0 ? args[args.size()] : "";
-		variables.partialCompletion = false;
-		if(prefix eq "") {
-			command = args.size() > 0 ? args[1] : "";
-		} else {
-			if(arrayLen(args) >= 2) {
-				command = args[2];
-			} else if(!StructKeyExists(commands,prefix)) {
-				return len(start);
-			}
+		var lastArg = args.size() > 0 ? args[args.size()].getText() : "";
+		if(args.size() == 0 && commandLine.command().arguments().getText().trim() != "") {
+			lastArg = commandLine.command().arguments().getText().trim();
 		}
-
-		if(args.size() == 0 || arrayLen(args) == 1 && !start.endsWith(" ")) {
-			// starting to type the prefix or command
-        	candidates.clear();
-	        for (var i = commandlist.iterator(); i.hasNext();) {
-	            var can = i.next();
-	            if (can.startsWith(start)) {
-		            candidates.add(can);
-	            }
-	        }
-		} else if (arrayLen(args) == 1 && start.endsWith(" ")) {
-			// add prefix command list or command parameters
-			if(len(prefix) > 0) {
-				for(var param in commands[prefix]) {
-	            	candidates.add(param);
+		variables.partialCompletion = false;
+		if(prefix == "" && command == "") {
+			for(var can in commandList) {
+	            if (can.startsWith(start) || start == "") {
+	            	candidates.add(can);
 				}
+			}
+		} else if(prefix != "" && command == "") {
+			var typedSoFar = start.replace(prefix,"");
+			if(typedSoFar=="") {
+            	candidates.add(prefix);
 			} else {
-				if(!StructKeyExists(commands,prefix) || !StructKeyExists(commands[prefix],command)) {
-					return len(start);
+				typedSoFar = trim(typedSoFar);
+				for(var commandName in commands[prefix]) {
+	            	if (commandName.startsWith(typedSoFar) || typedSoFar == "") {
+	            		candidates.add(commandName);
+	            	}
 				}
+			}
+		} else if(command != "" && args.size() == 0 && lastArg == "") {
+			if(!start.endsWith(" ")) {
+            	candidates.add(command);
+			} else {
 				for(var param in commands[prefix][command].parameters) {
-	            	candidates.add(param.name);
+	            	candidates.add(param.name & "=");
 				}
-				isArgument = true;
 			}
-			startIndex = len(start);
-		} else if(len(prefix) && arrayLen(args) == 2 && !start.endsWith(" ")) {
-			// prefix command list
-			for(var param in commands[prefix]) {
-	            if (param.startsWith(lastArg)) {
-            		candidates.add(param);
-	            }
-			}
-			startIndex = len(start) - len(lastArg);
-		} else if(arrayLen(args) > 1) {
-			var parameters = "";
-			var lastArg = args[arrayLen(args)];
-			isArgument = true;
+		} else if(command != "" && (args.size() > 0 || lastArg != "")) {
 			parameters = commands[prefix][command].parameters;
 			for(var param in parameters) {
-				if(!start.endsWith(" ") && lastArg.startsWith("#param.name#=")) {
+				if(lastArg.startsWith("#param.name#=")) {
 					var paramType = param.type;
 					var paramSoFar = listRest(lastArg,"=");
+					paramSoFar = paramSoFar.equals("<EOF>") ? "" : paramSoFar;
 					paramValueCompletion(param.name, paramType, paramSoFar, candidates);
-					startIndex = len(start) - len(paramSoFar);
-					isArgument = false;
 				} else {
 		            if (param.name.startsWith(lastArg) || start.endsWith(" ")) {
 		            	if(!findNoCase(param.name&"=", start)) {
-		            		candidates.add(param.name);
+		            		candidates.add(param.name & "=");
 		            	}
 		            }
-					startIndex = start.endsWith(" ") || findNoCase("=",lastArg) ? len(start) : len(start) - len(lastArg);
-					isArgument = true;
 				}
 			}
 		}
+/*
         if (candidates.size() == 1 && !partialCompletion) {
-        	can = isArgument ? candidates.first() & "=" : candidates.first() & " ";
+        	can = isArgument ? candidates.get(0) & "=" : candidates.get(0) & " ";
         	candidates.clear();
         	candidates.add(can);
         }
+		shell.println("");
+		shell.println(start);
+		shell.println(candidates);
+*/
+        co.setCompletionCandidates(candidates);
+        return;
         return (candidates.size() == 0) ? (-1) : startIndex;
 	}
 
@@ -149,7 +158,6 @@ component output="false" persistent="false" {
 		}
 		variables.partialCompletion = true;
 	}
-
 
 	/**
 	 * populate file parameter value completion candidates

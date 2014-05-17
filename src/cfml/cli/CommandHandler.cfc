@@ -26,8 +26,8 @@ component output="false" persistent="false" {
 		initCommands();
 		commandGrammar = new commandgrammar.CommandGrammar();
 		commandGrammar.setCommands(getCommands());
-		var completor = createDynamicProxy(new Completor(this), ["jline.Completor"]);
-        reader.addCompletor(completor);
+		var completor = createDynamicProxy(new Completor(this), ["org.jboss.jreadline.complete.Completion"]);
+        reader.addCompletion(completor);
 		return this;
 	}
 
@@ -55,7 +55,7 @@ component output="false" persistent="false" {
 		var cfcMeta = getMetadata(cfc);
 		for(var fun in cfcMeta.functions) {
 			if(fun.name != "init" && fun.access != "private") {
-				var commandname = isNull(fun["command.name"]) ? fun.name : fun["command.name"];
+				var commandname = isNull(fun["command.name"]) ? fun.name : trim(fun["command.name"]);
 				for(var param in fun.parameters) {
 					if(isNull(param.hint)) {
 						param.hint = "No help available";
@@ -64,10 +64,10 @@ component output="false" persistent="false" {
 				commands[namespace][commandname].parameters = fun.parameters;
 				commands[namespace][commandname].functionName = fun.name;
 				commands[namespace][commandname].cfc = cfc;
-				commands[namespace][commandname].hint = fun.hint;
+				commands[namespace][commandname].hint = !isNull(fun.hint) ? fun.hint : "";
 				var aliases = isNull(fun["command.aliases"]) ? [] : listToArray(fun["command.aliases"]);
 				for(var alias in aliases) {
-					commands[namespace][alias] = commands[namespace][commandname];
+					commands[namespace][trim(alias)] = commands[namespace][commandname];
 				}
 			}
 		}
@@ -155,19 +155,42 @@ component output="false" persistent="false" {
 	}
 
 	/**
+	 * return the shell
+ 	 **/
+	function getParser() {
+		return variables.commandGrammar;
+	}
+
+	/**
 	 * run a command line
 	 * @line.hint line to run
  	 **/
 	function runCommandline(line) {
-		var parsed = commandGrammar.parse(line);
+		var parsed = parseCommandline(line);
+		if(isNull(commands[parsed.namespace][parsed.command])) {
+			throw(type="command.exception",message:"'#parsed.namespace# #parsed.command#' is unknown.  Did you mean one of these: #structKeyList(commands[parsed.namespace])#?");
+		}
+		return callCommand(parsed.namespace, parsed.command, parsed.args);
+	}
+
+	/**
+	 * parse a command line
+	 * @line.hint line to run
+ 	 **/
+	function parseCommandline(line) {
+		var retStruct = {"namespace":"", "command":"", "args":[]};
+		var parsed = getParser().parse(line);
 		var commandLine = parsed.tree;
 		var namespace = isNull(commandLine.namespace()) ? "" : commandLine.namespace().getText();
 		var command = commandLine.command().commandName().getText();
 		var args = commandLine.command().arguments().argument();
 		if(command == "<missing commandname>") {
-			return "available actions: #structKeyList(commands[namespace])#";
+			command = namespace == "" ? line : trim(line.replace(namespace,""));
+			command = command == "" ? command : "Unknown command '#command#'! ";
+			retStruct.command = command;
+			retStruct.namespace = namespace;
+			return retStruct;
 		}
-
 		if(arrayLen(parsed.messages)) {
 			var lastMessage = parsed.messages[arrayLen(parsed.messages)];
 			var expected = lastMessage.parse.tree != ""
@@ -178,8 +201,7 @@ component output="false" persistent="false" {
 				extendedInfo=1&":"&lastMessage.offendingSymbol.startIndex);
 		}
 		if(isNull(commands[namespace][command])) {
-			shell.printError({message:"'#namespace# #command#' is unknown.  Did you mean one of these: #structKeyList(commands[namespace])#?"});
-			return;
+			throw(type="command.exception",message:"'#namespace# #command#' is unknown.  Did you mean one of these: #structKeyList(commands[namespace])#?");
 		}
 		var unnamedArgs = [];
 		var namedArgs = {};
@@ -192,9 +214,10 @@ component output="false" persistent="false" {
        	for(var arg in args) {
      		var value = unescapeString(arg.value().getText());
        		if(!isNull(arg.argumentName())) {
-        		namedArgs[param.name] = value;
-      			if(param.required) {
-        			arrayDelete(requiredParams,param);
+       			var argName = arg.argumentName().getText();
+        		namedArgs[argName] = value;
+      			if(arrayContains(requiredParams,argName)) {
+        			arrayDelete(requiredParams,argName);
       			}
        		} else {
  				arrayAppend(unnamedArgs,value);
@@ -205,9 +228,11 @@ component output="false" persistent="false" {
 			arrayAppend(unnamedArgs,arg.value().getText());
        	}
 		if(len(StructKeyList(namedArgs))) {
-			return callCommand(namespace,command,namedArgs);
+			retstruct = {"namespace":namespace, "command": command, "args": namedArgs};
+		} else {
+			retStruct = {"namespace":namespace, "command": command, "args": unnamedArgs};
 		}
-		return callCommand(namespace,command,unnamedArgs);
+		return retStruct;
 	}
 
 	/**
@@ -229,7 +254,9 @@ component output="false" persistent="false" {
 		var functionName = commands[namespace][command].functionName;
 		var runCFC = commands[namespace][command].cfc;
 		args = isNull(args) ? [] : args;
-		if(args.size()) {
+		if(isArray(args) && args.size()) {
+			return runCFC[functionName](argumentCollection=args);
+		} else if (isStruct(args)) {
 			return runCFC[functionName](argumentCollection=args);
 		} else {
 			return runCFC[functionName]();

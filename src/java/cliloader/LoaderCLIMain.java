@@ -1,34 +1,56 @@
 package cliloader;
 
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileOutputStream;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.FilenameFilter;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.LinkedList;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
+
+import runwar.Start;
 
 public class LoaderCLIMain {
 
 	private static String LIB_ZIP_PATH = "libs.zip";
 	private static String CFML_ZIP_PATH = "cfml.zip";
-	private static final int KB = 1024;
 	private static ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 	private static Boolean debug = false;
+	private static int exitCode = 0;
+    private static final File thisJar = new File(LoaderCLIMain.class.getProtectionDomain().getCodeSource().getLocation().getPath());
+	public static final Set<String> loggers = new HashSet<String>(Arrays.asList(new String[] {
+			"RunwarLogger",
+			"org.jboss.logging",
+			"org.xnio.Xnio",
+			"org.xnio.nio.NioXnio",
+			"io.undertow.UndertowLogger"
+	}));
 
 	public static void main(String[] args) throws Throwable {
+    	ArrayList<String> argList = new ArrayList(Arrays.asList(args));
 		Properties props = new Properties();
 		try {
 	        props.load(classLoader.getSystemResourceAsStream("cliloader/cli.properties"));
@@ -39,8 +61,10 @@ public class LoaderCLIMain {
 		Map<String,String> config=toMap(args);
 		Boolean updateLibs = false;
 		Boolean startServer = false;
+		Boolean stopServer = false;
 		Boolean background = false;
 		File cli_home;
+		String currentDir = System.getProperty("user.dir");
 		Map<String, String> env = System.getenv();
 		if (config.get(name+"_home") != null) {
 			cli_home = new File(config.get(name+"_home"));
@@ -65,59 +89,61 @@ public class LoaderCLIMain {
 		File libDir=new File(cli_home,"lib").getCanonicalFile();
 		
 		// debug
-		if(config.get("debug") != null) {
+		if(listContains(argList,"-debug")) {
 			debug = true;
-			System.out.println("Using configuration in "+ cli_home + " (change with -"+name+"_home=/path/to/dir)");
+			listRemoveContaining(argList,"-debug");
+			args = removeElement(args,"-debug");
 		}
+		String loglevel = debug ? "DEBUG" : "WARN" ;
+		subvertLoggers(loglevel, loggers);
+
 		// update/overwrite libs
-		if(config.get("update") != null) {
+		if(listContains(argList,"-update")) {
 			System.out.println("updating "+name+" home");
 			updateLibs = true;
+			listRemoveContaining(argList,"-update");
 			args = removeElement(args,"-update");
 		}
-		// background
-		if(config.get("background") != null) {
-			background = true;
-			args = removeElement(args,"-background");
+		
+		if(listContains(argList,"-stop")) {
+			stopServer = true;
+			background = false;
 		}
 		
-		// default to running the shell
-		if(args.length == 0) {
-			config.put("shell","true");			
-		}
-		if(!updateLibs && (config.get("?") != null || config.get("help") != null)) {
+		if(!updateLibs && (listContains(argList,"-?") || listContains(argList,"-help"))) {
 			System.out.println(props.get("usage").toString().replace("/n",System.getProperty("line.separator").toString()));
 			Thread.sleep(1000);
 			System.exit(0);
 		}
 		
 		// railo libs dir
-		String strLibs=config.get("lib");
-		if(strLibs != null && strLibs.length() != 0) {
+		if(listContains(argList,"-lib")) {
+			String strLibs=config.get("lib");
 			libDir=new File(strLibs);
-			args = removeElementThenAdd(args,"-lib=","");
+			args = removeElementThenAdd(args,"-lib=",null);
+			listRemoveContaining(argList,"-lib");
 		}
 
-		String strStart=config.get("server");
-		if(strStart != null) {
+		if(listContains(argList,"-server")) {
 			startServer=true;
 		}
 
-		File webRoot;
-		if(config.get("webroot") != null) {
-			webRoot = new File(config.get("webroot")).getCanonicalFile();
-		} else {
-			webRoot = new File("./").getCanonicalFile();
+		if(debug) System.out.println("lib dir: " + libDir);
+		
+		// clean out any leftover pack files (an issue on windows)
+		if(libDir.exists() && libDir.listFiles(new ExtFilter(".gz")).length > 0){
+			for(File gz : libDir.listFiles(new ExtFilter(".gz"))) {
+				try { gz.delete(); } catch (Exception e) {}
+			}
 		}
 
-		if(debug) System.out.println("lib dir: " + libDir);
-
-		if (!libDir.exists() || libDir.listFiles(new ExtFilter()).length < 2 
+		if (!libDir.exists() || libDir.listFiles(new ExtFilter(".jar")).length < 2 
 				|| updateLibs) {
 			System.out.println("Library path: " + libDir);
 			System.out.println("Initializing libraries -- this will only happen once, and takes a few seconds...");
-			unzipInteralZip(LIB_ZIP_PATH,libDir);
-			unzipInteralZip(CFML_ZIP_PATH,new File(cli_home.getPath()+"/cfml"));
+			Util.unzipInteralZip(classLoader, LIB_ZIP_PATH, libDir, debug);
+			Util.unzipInteralZip(classLoader, CFML_ZIP_PATH, new File(cli_home.getPath()+"/cfml"), debug);
+			Util.copyInternalFile(classLoader, "resource/trayicon.png", new File(libDir,"trayicon.png"));
 			System.out.println("");
 			System.out.println("Libraries initialized");
 			if(updateLibs && args.length == 0) {
@@ -126,10 +152,10 @@ public class LoaderCLIMain {
 			}
 		}
 		
-        File[] children = libDir.listFiles(new ExtFilter());
+        File[] children = libDir.listFiles(new ExtFilter(".jar"));
         if(children.length<2) {
         	libDir=new File(libDir,"lib");
-        	 children = libDir.listFiles(new ExtFilter());
+        	 children = libDir.listFiles(new ExtFilter(".jar"));
         }
         
         URL[] urls = new URL[children.length];
@@ -142,78 +168,144 @@ public class LoaderCLIMain {
         //URLClassLoader cl = new URLClassLoader(urls,null);
         URLClassLoader cl = new URLClassLoader(urls,classLoader);
 		//Thread.currentThread().setContextClassLoader(cl);
-        Class cli;
-        if(!startServer) {
-    		String SHELL_CFM = props.getProperty("shell") != null ? props.getProperty("shell") : "/cfml/cli/shell.cfm";
+        InputStream originalIn = System.in;
+        PrintStream originalOut = System.out;
+//    	Thread shutdownHook = new Thread( "cli-shutdown-hook" ) { public void run() { cl.close(); } };
+//      Runtime.getRuntime().addShutdownHook( shutdownHook );	
+		File configServerDir=new File(libDir.getParentFile(),"server");
+		File configWebDir=new File(libDir.getParentFile(),"server/railo-web");
+		System.setProperty("cfml.cli.home", cli_home.getAbsolutePath());
+		System.setProperty("railo.server.config.dir", configServerDir.getAbsolutePath());
+		System.setProperty("railo.web.config.dir", configWebDir.getAbsolutePath());
+//		System.setProperty("cfml.server.trayicon", thisJar.getAbsolutePath() + "!/resource/trayicon.png");
+		System.setProperty("cfml.server.trayicon", libDir.getAbsolutePath() + "/trayicon.png");
+		System.setProperty("cfml.server.dockicon", "");
+        if(!startServer && !stopServer) {
+        	System.setIn(new NonClosingInputStream(System.in));
+    		final String SHELL_CFM = props.getProperty("shell") != null ? props.getProperty("shell") : "/cfml/cli/shell.cfm";
+    		String uri = cli_home + SHELL_CFM;
         	if(debug) System.out.println("Running in CLI mode");
-    		if(config.get("repl") != null || config.get("shell") != null) {
-        		args = removeElementThenAdd(args,"-uri","-uri="+ cli_home + SHELL_CFM);
-    		}
+        	if(argList.size() > 1 && argList.contains("execute")) {
+        		int executeIndex = argList.indexOf("execute");
+        		File cfmlFile = new File(argList.get(executeIndex+1));
+        		if(cfmlFile.exists()) {
+        			uri = cfmlFile.getCanonicalPath();
+        		}
+        		argList.remove(executeIndex+1);
+        		argList.remove(executeIndex);        		
+        		if(debug) System.out.println("Executing: "+uri);
+        	}
+    		System.setProperty("cfml.cli.arguments",arrayToList(argList.toArray(new String[argList.size()])," "));
+            Class<?> cli;
 	        cli = cl.loadClass("railocli.CLIMain");
+	        Method run = cli.getMethod("run",new Class[]{File.class,File.class,File.class,String.class,boolean.class});
+			try{
+				File webroot=new File("/").getCanonicalFile();
+	        	run.invoke(null, webroot,configServerDir,configWebDir,uri,debug);
+			} catch (Exception e) {
+				exitCode = 1;
+				e.getCause().printStackTrace();
+			}
+			cl.close();
+/*			
+			String osName = System.getProperties().getProperty("os.name");
+  			if(osName != null && !osName.contains("indows")){
+				final String ANSI_CLS = "\u001b[2J";
+				final String ANSI_HOME = "\u001b[H";
+				System.out.print(ANSI_CLS + ANSI_HOME);	        	
+			}
+*/
+			System.out.flush();
+			System.setOut(originalOut);
+	        System.setIn(originalIn);
+			System.exit(exitCode);
         } 
         else {
         	if(debug) System.out.println("Running in server mode");
-	        cli = cl.loadClass("runwar.Start");
+    		//only used for server mode, cli root is /
+    		File webRoot;
+    		if(listContains(argList,"-webroot") && config.get("webroot") != null) {
+				args = removeElement(args,"-webroot");
+    			webRoot = new File(config.get("webroot")).getCanonicalFile();
+    		} else {
+    			if(currentDir != null) {
+    				webRoot = new File(currentDir).getCanonicalFile();
+    			} else {
+    				webRoot = new File("./").getCanonicalFile();
+    			}
+    		}
+			// background
+			if(listContains(argList,"-background")) {
+				background = true;
+				args = removeElement(args,"-background");
+			}
+	        Class<?> runwar;
+	        runwar = cl.loadClass("runwar.Start");
 			String path = LoaderCLIMain.class.getProtectionDomain().getCodeSource().getLocation().getPath();
 			//System.out.println("yum from:"+path);
 			String decodedPath = java.net.URLDecoder.decode(path, "UTF-8");
 			decodedPath = new File(decodedPath).getPath();
 
     		//args = removeElementThenAdd(args,"-server","-war "+webRoot.getPath()+" --background false --logdir " + libDir.getParent());
-    		String argstr;
+    		String[] argstr;
     		if(background) {
-    			argstr="-war "+webRoot.getPath()+" --background true --jar \""+decodedPath.replace('\\','/')+"\" --libdir \"" + libDir.getPath() +"\"";
+    			argstr= new String[] {
+    					"-war",webRoot.getPath(),
+    					"--background","true",
+    					"--iconpath",libDir.getAbsolutePath() + "/trayicon.png",
+    					"--libdir",libDir.getPath(),
+    					"--processname",name
+    					};
     		} else {
-    			argstr="-war "+webRoot.getPath()+" --background false";
+    			argstr= new String[] {
+    					"-war",webRoot.getPath(),
+    					"--iconpath",libDir.getAbsolutePath() + "/trayicon.png",
+    					"--background","false",
+    					"--processname",name
+    					};
     		}
     		args = removeElementThenAdd(args,"-server",argstr);
-        	if(debug) System.out.println("Args: " + java.util.Arrays.toString(args));
+        	if(debug) System.out.println("Args: " + arrayToList(args," "));
+            Method main = runwar.getMethod("main",new Class[]{String[].class});
+    		try{
+            	main.invoke(null, new Object[]{args});
+    		} catch (Exception e) {
+    			exitCode = 1;
+    			e.getCause().printStackTrace();
+    		}
+			cl.close();
         } 
-        Method main = cli.getMethod("main",new Class[]{String[].class});
-		try{
-        	main.invoke(null, new Object[]{args});
-		} catch (Exception e) {
-			e.getCause().printStackTrace();
-		}
 	}
-	
-	public static void unzipInteralZip(String resourcePath, File libDir) {
-		if(debug) System.out.println("Extracting " + resourcePath);
-		libDir.mkdir();
-		URL resource = classLoader.getResource(resourcePath);
-		if (resource == null) {
-			System.err.println("Could not find the " + resourcePath + " on classpath!");
-			System.exit(1);
-		}
-		try {
 
-			BufferedInputStream bis = new BufferedInputStream(resource.openStream());
-			JarInputStream jis = new JarInputStream(bis);
-			JarEntry je = null;
-
-			while ((je = jis.getNextJarEntry()) != null) {
-				java.io.File f = new java.io.File(libDir.toString() + java.io.File.separator + je.getName());
-				if (je.isDirectory()) {
-					f.mkdir();
-					continue;
-				}
-				File parentDir = new File(f.getParent());
-				if (!parentDir.exists()) {
-					parentDir.mkdir();
-				}
-				writeStreamTo(jis, new FileOutputStream(f), 8 * KB);
-				if(f.getPath().endsWith("pack.gz")) {
-					Util.unpack(f);
-					f.delete();
-				}
-				System.out.print(".");
-			}
-			bis.close();
-		} catch (Exception exc) {
-			exc.printStackTrace();
-		}
-		
+	private static void subvertLoggers(String level, Set<String> loggers) {
+		System.setProperty("java.util.logging.ConsoleHandler.formatter", "java.util.logging.SimpleFormatter");
+		System.setProperty("java.util.logging.SimpleFormatter.format", "%1$tY-%1$tm-%1$td %1$tH:%1$tM:%1$tS %4$s %2$s %5$s%6$s%n");
+        java.util.logging.ConsoleHandler chandler = new java.util.logging.ConsoleHandler();
+        if(level.trim().toUpperCase().equals("TRACE"))
+        	level = "FINER";
+        if(level.trim().toUpperCase().equals("WARN"))
+        	level = "WARNING";
+        if(level.trim().toUpperCase().equals("DEBUG"))
+        	level = "FINEST";
+        java.util.logging.Level LEVEL = java.util.logging.Level.parse(level);
+        chandler.setLevel(LEVEL);
+		java.util.logging.LogManager logManager = java.util.logging.LogManager.getLogManager();
+		for(Enumeration<String> loggerNames = logManager.getLoggerNames(); loggerNames.hasMoreElements();){
+	        String name = loggerNames.nextElement();
+	        java.util.logging.Logger nextLogger = logManager.getLogger(name);
+	        if(loggers.contains(name) && nextLogger != null) {
+	        	nextLogger.setUseParentHandlers(false);
+	        	nextLogger.setLevel(LEVEL);
+	        	if(nextLogger.getHandlers() != null) {
+	        		for(java.util.logging.Handler handler : nextLogger.getHandlers()) {
+	        			nextLogger.removeHandler(handler);
+	        		}
+	        		nextLogger.addHandler(chandler);	        		
+	        	}
+	        }
+	    }		
 	}
+
 	
 	public static String[] removeElement(String[] input, String deleteMe) {
 		final List<String> list =  new ArrayList<String>();
@@ -227,42 +319,60 @@ public class LoaderCLIMain {
 		return input;
 	}
 	
-	public static String[] removeElementThenAdd(String[] input, String deleteMe, String addList) {
+	public static String[] removeElementThenAdd(String[] input, String deleteMe, String[] addList) {
 	    List<String> result = new LinkedList<String>();
 	    for(String item : input)
 	        if(!item.startsWith(deleteMe))
 	            result.add(item);
 
-	    for(String item : addList.split(" "))
-	    		result.add(item);
+	    if(addList != null)
+		    for(String item : addList)
+		    		result.add(item);
 	    
 	    return result.toArray(input);
 	}
 
 
 	public static class ExtFilter implements FilenameFilter {
+		private String ext;
+		public ExtFilter(String extension) {
+			ext = extension;
+		}
 		
-		private String ext=".jar";
 		public boolean accept(File dir, String name) {
 			return name.toLowerCase().endsWith(ext);
 		}
 
 	}
-
-	public static int writeStreamTo(final InputStream input, final OutputStream output, int bufferSize)
-			throws IOException {
-		int available = Math.min(input.available(), 256 * KB);
-		byte[] buffer = new byte[Math.max(bufferSize, available)];
-		int answer = 0;
-		int count = input.read(buffer);
-		while (count >= 0) {
-			output.write(buffer, 0, count);
-			answer += count;
-			count = input.read(buffer);
-		}
-		return answer;
+	
+	public static String arrayToList(String[] s, String separator) {  
+	       String result = "";  
+	    if (s.length > 0) {  
+	        result = s[0];     
+	   for (int i=1; i<s.length; i++) {  
+	            result = result + separator + s[i];  
+	        }  
+	    }  
+	    return result;  
 	}
-
+	
+	public static boolean listContains(ArrayList<String> argList, String text) {  
+	    boolean found = false;
+		for(String item : argList)
+	        if(item.startsWith(text))
+	            found = true;
+		return found;
+	}
+	
+	public static void listRemoveContaining(ArrayList<String> argList, String text) {
+		for (Iterator<String> it = argList.iterator(); it.hasNext();) {
+			String str = it.next();
+			if (str.startsWith(text)) {
+				it.remove();
+			}
+		}
+	}
+	
 	private static Map<String, String> toMap(String[] args) {
 		int index;
 		Map<String, String> config=new HashMap<String, String>();
@@ -284,4 +394,5 @@ public class LoaderCLIMain {
 		}
 		return config;
 	}
+
 }
