@@ -40,7 +40,9 @@ component output="false" persistent="false" {
 			if(listLast(dir,".") eq "cfc") {
 				loadCommands("","command.#listFirst(dir,'.')#");
 			} else {
-				loadCommands(dir,"command.#dir#.#dir#");
+				if(fileExists(thisdir & "/command/#dir#/#dir#.cfc")) {
+					loadCommands(dir,"command.#dir#.#dir#");
+				}
 			}
 		}
 	}
