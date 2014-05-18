@@ -131,6 +131,7 @@ public class LoaderCLIMain {
 		if(listContains(argList,"-shell")) {
 			startServer=false;
 			args = removeElement(args,"-shell");
+			listRemoveContaining(argList,"-shell");
 		}
 
 		if(debug) System.out.println("lib dir: " + libDir);
