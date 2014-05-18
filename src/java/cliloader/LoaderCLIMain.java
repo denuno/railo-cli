@@ -128,6 +128,11 @@ public class LoaderCLIMain {
 			startServer=true;
 		}
 
+		if(listContains(argList,"-shell")) {
+			startServer=false;
+			args = removeElement(args,"-shell");
+		}
+
 		if(debug) System.out.println("lib dir: " + libDir);
 		
 		// clean out any leftover pack files (an issue on windows)
