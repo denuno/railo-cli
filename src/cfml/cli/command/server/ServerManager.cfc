@@ -21,15 +21,13 @@ component {
 	/**
 	 * Start a server instance
 	 *
-	 * @openbrowser.hint open a browser after starting
-	 * @directory.hint web root for this server
-	 * @name.hint short name for this server
-	 * @port.hint port number
-	 * @stopsocket.hint stop socket listener port number
+	 * @serverInfo.hint struct of server info (ports, etc.)
+	 * @background.hint start server in background
+  	 * @openbrowser.hint open a browser after starting
 	 * @force.hint force start if status is not stopped
 	 * @debug.hint sets debug log level
 	 **/
-	function start(Struct serverInfo, Boolean openBrowser, Boolean force=false, Boolean debug=false)  {
+	function start(Struct serverInfo, Boolean background=false, Boolean openBrowser=false, Boolean force=false, Boolean debug=false)  {
 		var launchUtil = java.LaunchUtil;
 		var webroot = serverInfo.webroot;
 		var webhash = hash(serverInfo.webroot);
@@ -40,9 +38,9 @@ component {
 				.getLocation().toURI().getSchemeSpecificPart()).getAbsolutePath();
 		var logdir = shell.getHomeDir() & "/server/log/" & name;
 		var processName = name is "" ? "cfml" : name;
-		var command = launchUtil.getJreExecutable();
+		var command = launchUtil.getJreExecutable().getCanonicalPath();
 		var args = "-javaagent:""#libdir#/railo-inst.jar"" -jar ""#jarPath#"""
-				& " -war ""#webroot#"" --background=true --port #portNumber# --debug #debug#"
+				& " -war ""#webroot#"" --background #background# --port #portNumber# --debug #debug#"
 				& " --stop-port #socket# --processname ""#processName#"" --log-dir ""#logdir#"""
 				& " --open-browser #openbrowser# --open-url http://127.0.0.1:#portNumber#"
 				& " --libdir ""#variables.libdir#"" --iconpath ""#variables.libdir#/trayicon.png""";
@@ -56,22 +54,42 @@ component {
 		if(serverInfo.status == "stopped" || force) {
 			serverInfo.status = "starting";
 			setServerInfo(serverInfo);
-			thread name="server#webhash##createUUID()#" serverInfo=serverInfo command=command args=args {
-				try{
-					execute name=command arguments=args timeout="50" variable="executeResult";
-					serverInfo.statusInfo = {command:command,arguments:args,result:executeResult};
-					serverInfo.status="running";
-					setServerInfo(serverInfo);
-				} catch (any e) {
-					serverInfo.statusInfo.result &= executeResult;
-					serverInfo.status="unknown";
-					setServerInfo(serverInfo);
+			if(!background) {
+				return launch(serverInfo, command, args);
+			} else {
+				thread name="server#webhash##createUUID()#" serverInfo=serverInfo command=command args=args {
+					launch(serverInfo, command, args);
 				}
 			}
 			return "The server for #webroot# is starting on port #portNumber#... type 'server status' to see result";
 		} else {
 			return "Cannot start!  The server is currently in the #serverInfo.status# state!#chr(10)#Use force=true or the 'server forget' command ";
 		}
+	}
+
+	/**
+	 * Launch a server instance
+	 *
+	 * @serverInfo.hint struct of server info (ports, etc.)
+	 * @command.hint web root for this server
+	 * @args.hint short name for this server
+	 **/
+	private function launch(Struct serverInfo, String command, String args)  {
+		try{
+			if(find(" ",command) && !command.endsWith('"')) {
+				command = '"#command#"';
+			}
+			execute name=command arguments=args timeout="50" variable="executeResult";
+			serverInfo.statusInfo = {command:command,arguments:args,result:executeResult};
+			serverInfo.status="running";
+			setServerInfo(serverInfo);
+			return executeResult;
+		} catch (any e) {
+			serverInfo.statusInfo.result &= executeResult;
+			serverInfo.status="unknown";
+			setServerInfo(serverInfo);
+		}
+		return "";
 	}
 
 	/**
@@ -82,7 +100,7 @@ component {
 		var launchUtil = java.LaunchUtil;
 		var jarPath = java.File.init(launchUtil.class.getProtectionDomain().getCodeSource()
 				.getLocation().toURI().getSchemeSpecificPart()).getAbsolutePath();
-		var command = launchUtil.getJreExecutable();
+		var command = launchUtil.getJreExecutable().getCanonicalPath();
 		var stopsocket = serverInfo.stopsocket;
 		var args = "-jar ""#jarPath#"" -stop --stop-port #val(stopsocket)# --background false";
 		try{

@@ -24,6 +24,7 @@ component output="false" persistent="false" trigger="" {
 	/**
 	 * Start server
 	 *
+	 * @background.hint start server in background
 	 * @openbrowser.hint open a browser after starting
 	 * @directory.hint web root for this server
 	 * @name.hint short name for this server
@@ -32,7 +33,7 @@ component output="false" persistent="false" trigger="" {
 	 * @force.hint force start if status is not stopped
 	 * @debug.hint sets debug log level
 	 **/
-	function start(Boolean openbrowser=false, String directory="", String name="", Numeric port=0, Numeric stopsocket=0, Boolean force=false, Boolean debug=false)  {
+	function start(Boolean openbrowser=false, Boolean background=false, String directory="", String name="", Numeric port=0, Numeric stopsocket=0, Boolean force=false, Boolean debug=false)  {
 		var manager = new ServerManager(shell);
 		var webroot = directory is "" ? shell.pwd() : directory;
 		var name = name is "" ? listLast(webroot,"\/") : name;
@@ -45,7 +46,7 @@ component output="false" persistent="false" trigger="" {
 		}
 		serverInfo.webroot = webroot;
 		serverInfo.debug = debug;
-		return manager.start(serverInfo, openbrowser, force, debug);
+		return manager.start(serverInfo, background, openbrowser, force, debug);
 	}
 
 	/**

@@ -28,14 +28,13 @@
 
       <target name="test">
 	      <server-run>
-	          <mxunit-rundirs basePath="${tests.dir}/cfml" outputdir="${dist.dir}/testresults/"/>
+	          <mxunit-rundirs basePath="${tests.dir}" baseComponentPath="tests" outputdir="${dist.dir}/testresults/" failonerror="true"/>
 	      </server-run>
       </target>
 
       <target name="build.test" depends="build.testwar">
 	      <server-run>
-	          <mxunit-rundirs basePath="${tests.dir}/cfml" outputdir="${dist.dir}/testresults/"
-	              runner="http://${runwar.host}:${runwar.port}/tests/HttpAntRunner.cfm?"/>
+	          <mxunit-rundirs basePath="${tests.dir}" baseComponentPath="tests" outputdir="${dist.dir}/testresults/" failonerror="true" />
 	      </server-run>
       </target>
 

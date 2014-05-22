@@ -38,6 +38,20 @@ component output="false" persistent="false" {
 	 * @cursor.hint cursor position
 	 * @candidates.hint tree to populate with completion candidates
  	 **/
+	function getFormattedCompletionCandidates()  {
+		try {
+			_complete(co);
+		} catch (any e) {
+			shell.printError(e);
+		}
+	}
+
+	/**
+	 * populate completion candidates and return cursor position
+	 * @buffer.hint text so far
+	 * @cursor.hint cursor position
+	 * @candidates.hint tree to populate with completion candidates
+ 	 **/
 	function _complete(co)  {
 		candidates = createObject("java","java.util.ArrayList");
 		var start = isNull(co.getBuffer()) ? "" : shell.unansi(co.getBuffer());
@@ -99,12 +113,13 @@ component output="false" persistent="false" {
 				}
 			}
 		}
-/*
         if (candidates.size() == 1 && !partialCompletion) {
         	can = isArgument ? candidates.get(0) & "=" : candidates.get(0) & " ";
         	candidates.clear();
         	candidates.add(can);
+        	shell.print(can);
         }
+/*
 		shell.println("");
 		shell.println(start);
 		shell.println(candidates);
