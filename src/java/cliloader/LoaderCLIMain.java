@@ -206,7 +206,7 @@ public class LoaderCLIMain {
 	        cli = cl.loadClass("railocli.CLIMain");
 	        Method run = cli.getMethod("run",new Class[]{File.class,File.class,File.class,String.class,boolean.class});
 			try{
-				File webroot=new File("/").getCanonicalFile();
+				File webroot=new File(getPathRoot(uri)).getCanonicalFile();
 	        	run.invoke(null, webroot,configServerDir,configWebDir,uri,debug);
 			} catch (Exception e) {
 				exitCode = 1;
@@ -399,6 +399,10 @@ public class LoaderCLIMain {
 			config.put(key.toLowerCase(), value);
 		}
 		return config;
+	}
+
+	public static String getPathRoot(String string) {
+		return string.replaceAll("^([^\\\\//]*?[\\\\//]).*?$", "$1");
 	}
 
 }
