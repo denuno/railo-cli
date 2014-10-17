@@ -203,20 +203,28 @@ public class LoaderCLIMain {
         		// bypass the shell for running pure CFML files
         		int executeIndex = argList.indexOf("execute");
         		File cfmlFile = new File(argList.get(executeIndex+1));
-        		if(cfmlFile.exists()) {
-        			uri = cfmlFile.getCanonicalPath();
+        		String filename = cfmlFile.getCanonicalPath();
+        		// run the raw file unless it is a 'batch' file (.rs for Railo and .boxr for CommandBox)
+        		if(!filename.endsWith(".rs") && !filename.endsWith(".boxr")) {
+        		    if(cfmlFile.exists()) {
+        		        uri = cfmlFile.getCanonicalPath();
+        		    }
+        		    argList.remove(executeIndex+1);
+        		    argList.remove(executeIndex);
+        		    if(debug) System.out.println("Executing: "+uri);
+        		} else {
+                    if(debug) System.out.println("Executing batch file: "+uri);        		    
         		}
-        		argList.remove(executeIndex+1);
-        		argList.remove(executeIndex);        		
-        		if(debug) System.out.println("Executing: "+uri);
         	} else if(argList.size() > 0 && new File(argList.get(0)).exists()) {
         		String filename = argList.get(0);
         		// this will force the shell to run the execute command
-        		if(filename.matches("/.rs*?$") || filename.matches("/.box*$")) {
+                if(filename.endsWith(".rs") || filename.endsWith(".boxr")) {
+                    if(debug) System.out.println("Executing batch file: "+filename);
         			argList.add(0, "execute");
         		} else {
             		File cfmlFile = new File(filename);
             		if(cfmlFile.exists()) {
+            		    if(debug) System.out.println("Executing file: "+filename);
             			uri = cfmlFile.getCanonicalPath();
             		}
         		}
