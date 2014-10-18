@@ -6,13 +6,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
-import java.awt.Image;
-
-import javax.imageio.ImageIO;
-
-import java.lang.reflect.Method;
-import java.net.URL;
-
 import javax.servlet.ServletException;
 import javax.servlet.jsp.JspException;
 
@@ -21,7 +14,6 @@ import org.jboss.logging.Logger;
 import railo.loader.engine.CFMLEngine;
 import railo.loader.engine.CFMLEngineFactory;
 import railo.loader.util.Util;
-import runwar.Start;
 
 public class CLIMain {
 /**

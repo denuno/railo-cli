@@ -2,28 +2,16 @@ package cliloader;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileDescriptor;
-import java.io.FileOutputStream;
-import java.io.BufferedInputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.FilenameFilter;
-import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,12 +23,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.jar.JarEntry;
-import java.util.jar.JarInputStream;
-
-import runwar.Start;
 
 public class LoaderCLIMain {
 
@@ -60,7 +42,7 @@ public class LoaderCLIMain {
 	}));
 
 	public static void main(String[] args) throws Throwable {
-    	ArrayList<String> argList = new ArrayList(Arrays.asList(args));
+    	ArrayList<String> argList = new ArrayList<String>(Arrays.asList(args));
 		Properties props = new Properties();
 		try {
 	        props.load(classLoader.getSystemResourceAsStream("cliloader/cli.properties"));
@@ -203,7 +185,6 @@ public class LoaderCLIMain {
         		// bypass the shell for running pure CFML files
         		int executeIndex = argList.indexOf("execute");
         		File cfmlFile = new File(argList.get(executeIndex+1));
-        		String filename = cfmlFile.getCanonicalPath();
     		    if(cfmlFile.exists()) {
     		        uri = cfmlFile.getCanonicalPath();
     		    }
