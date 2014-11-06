@@ -3,7 +3,12 @@ reldir=`dirname $0`
 cd $reldir/build
 ANTCMD="/bin/sh $HOME/cfdistro/ant/bin/ant -nouserlib -f build.xml"
 export ANT_HOME=$HOME/cfdistro/ant
-CFDISTRO_ZIP=$HOME/cfdistro/cfdistro.zip
+CFDISTRO_HOME=$HOME/cfdistro
+CFDISTRO_ZIP=$CFDISTRO_HOME/cfdistro.zip
+if [ ! -d "$CFDISTRO_HOME" -a -d "/opt/cfdistro/" ]; then
+        export CFDISTRO_HOME=/opt/cfdistro
+        ANTCMD="/bin/sh /opt/cfdistro/ant/bin/ant -nouserlib -f build.xml"
+fi
 if [ "$HTTP_CLIENT" = "" ]; then
     if type -p curl >/dev/null 2>&1; then
         if [ "$https_proxy" != "" ]; then
@@ -15,10 +20,6 @@ if [ "$HTTP_CLIENT" = "" ]; then
     fi
 fi
 if [ ! -d "$ANT_HOME" ]; then
-        export ANT_HOME=/opt/cfdistro/ant
-        ANTCMD="/bin/sh /opt/cfdistro/ant/bin/ant -nouserlib -f build.xml"
-fi
-if [ ! -d "$ANT_HOME" ]; then
     if [ -r "$CFDISTRO_ZIP" ]; then
       echo "The zip was already saved to $CFDISTRO_ZIP."
       echo "If you wish to re-download, delete it."
@@ -27,7 +28,7 @@ if [ ! -d "$ANT_HOME" ]; then
     echo "Downloading cfdistro now..."
     CFDISTRO_DIR=`dirname "$CFDISTRO_ZIP"`
     mkdir -p "$CFDISTRO_DIR"
-    CFDISTRO_URL="https://github.com/denuno/cfdistro/zipball/master"
+    CFDISTRO_URL="http://cfmlprojects.org/artifacts/cfdistro/latest/cfdistro.zip"
     $HTTP_CLIENT "$CFDISTRO_ZIP" "$CFDISTRO_URL"
     if [ $? != 0 ]; then
         echo "Failed to download $CFDISTRO_URL"
@@ -38,29 +39,29 @@ if [ ! -d "$ANT_HOME" ]; then
         rm $CFDISTRO_ZIP 2> /dev/null
         exit 1
     fi
-	unzip "$CFDISTRO_ZIP" -d "$CFDISTRO_DIR"
+    unzip "$CFDISTRO_ZIP" -d "$CFDISTRO_DIR"
 fi
 if [ -z "$1" ]; then
 echo "railo-cli control script"
-OPTIONS="start stop help list-targets update exit"
+OPTIONS="build build.all help list-targets update exit"
 select opt in $OPTIONS; do
-if [ "$opt" = "start" ]; then
-	$ANTCMD build.start.launch
-	exit
-elif [ "$opt" = "stop" ]; then
-	$ANTCMD server.stop
-	exit
+if [ "$opt" = "build" ]; then
+    $ANTCMD build
+    exit
+elif [ "$opt" = "build.all" ]; then
+    $ANTCMD build.all
+    exit
 elif [ "$opt" = "help" ]; then
-	echo "usage (skips this prompt): railo-cli.sh [start|stop|{target}]"
+    echo "usage (skips this prompt): railo-cli [start|stop|{target}]"
 elif [ "$opt" = "list-targets" ]; then
-	$ANTCMD help
+    $ANTCMD help
 elif [ "$opt" = "update" ]; then
-	$ANTCMD project.update
+    $ANTCMD project.update
 elif [ "$opt" = "exit" ]; then
-	exit
+    exit
 else
-	#clear
-	echo bad option
+    #clear
+    echo bad option
 fi
 done
 fi
@@ -72,5 +73,3 @@ do
     parameters="$parameters -D$var"
 done
 $ANTCMD $target -Dbasedir=. $parameters
-	
-			
