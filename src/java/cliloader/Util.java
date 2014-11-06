@@ -4,6 +4,10 @@ import java.io.*;
 import java.net.URL;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.jar.*;
@@ -142,4 +146,39 @@ public class Util {
 	  foc.close();
 	  fo.close();
 	}
+
+    static String getResourceAsString(String path) {
+        InputStream is = null;
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        PrintStream outPrint = new PrintStream(out);
+        try {
+            is = Util.class.getClassLoader().getResourceAsStream(path);
+            int content;
+            while ((content = is.read()) != -1) {
+                // convert to char and display it
+                outPrint.print((char) content);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (is != null)
+                    is.close();
+                if (outPrint != null)
+                    outPrint.close();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+        return out.toString();
+    }
+    
+    static String readFile(String path) throws IOException {
+        return readFile(path, StandardCharsets.UTF_8);
+    }
+
+    static String readFile(String path, Charset encoding) throws IOException {
+        byte[] encoded = Files.readAllBytes(Paths.get(path));
+        return new String(encoded, encoding);
+    }
 }

@@ -9,8 +9,6 @@ import java.util.Map;
 import javax.servlet.ServletException;
 import javax.servlet.jsp.JspException;
 
-import org.jboss.logging.Logger;
-
 import railo.loader.engine.CFMLEngine;
 import railo.loader.engine.CFMLEngineFactory;
 import railo.loader.util.Util;
@@ -25,8 +23,6 @@ public class CLIMain {
  * uri - host/scriptname/query
  * cookie - cookies (same pattern as query string)
  */
-	private static Logger log = Logger.getLogger("CLIMain");
-	
 	/**
 	 * @param uri 
 	 * @param debug 

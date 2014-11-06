@@ -1,5 +1,10 @@
 <project name="build-cli" default="build.cli" xmlns:antcontrib="antlib:net.sf.antcontrib" basedir=".">
 
+	<!-- define these in say ${user.home}/creds/cfmlprojects.properties and import them prior, if ya wanna sign-->
+   	<property name="cfmlprojects.sign.key.passphrase" value="" />
+   	<property name="cfmlprojects.sign.key.id" value="" />
+   	<property name="cfmlprojects.sign.keyring" value="" />
+
 	<target name="resolve.libs">
 		<delete dir="${lib.dir}"/>
  		<mvn-repo id="jboss.repo" url="http://repository.jboss.org/nexus/content/repositories/releases" />
@@ -17,7 +22,8 @@
 	</target>
 
 	<target name="build.cli" description="creates an jar with the libs cli" depends="resolve.libs">
-		<antcontrib:var name="cli.version" value="${cli.version}-${railo.version.long}" />
+		<antcontrib:var name="cli.version" value="${cli.version}.${railo.version.long}" />
+		<echo message="building cli.version ${cli.version}" />
 		<version-splitter version="${railo.version.long}" property="railo.version" bump="" />
 		<property name="runcli.jar.file" value="${dist.dir}/cli/railo-cli.jar"/>
    		<delete dir="${temp.dir}" />
@@ -118,6 +124,10 @@
 
     	<echo file="${temp.dir}/version" message="${cli.version}" />
         <copy file="${src.dir}/java/cliloader/cli.properties" todir="${temp.dir}/cli/bin/cliloader" />
+		<copy todir="${temp.dir}/cli/bin/cliloader" file="${src.dir}/java/cliloader/version.properties">
+			<filterchain><expandproperties/><deletecharacters chars="\n"/><trim/><ignoreblank/></filterchain>
+		</copy>
+
 		<jar destfile="${runcli.jar.file}" filesetmanifest="mergewithoutmain" level="9">
 			<manifest>
 				<attribute name="Main-Class" value="cliloader.LoaderCLIMain" />
@@ -152,30 +162,30 @@
 	</target>
 
  	<target name="build.cli.jre" depends="build.cli">
- 		<echo message="bundling ${mvn.jre.version} jre" />
-		<dependency groupId="oracle" artifactId="jre" version="${mvn.jre.version}" type="zip" classifier="win32" />
-		<dependency groupId="oracle" artifactId="jre" version="${mvn.jre.version}" type="zip" classifier="win64" />
-		<dependency groupId="oracle" artifactId="jre" version="${mvn.jre.version}" type="zip" classifier="linux32" />
-		<dependency groupId="oracle" artifactId="jre" version="${mvn.jre.version}" type="zip" classifier="linux64" />
-		<dependency groupId="oracle" artifactId="jre" version="${mvn.jre.version}" type="zip" classifier="darwin64" />
+ 		<echo message="bundling ${jre.version} jre" />
+		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="win32" />
+		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="win64" />
+		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="linux32" />
+		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="linux64" />
+		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="darwin64" />
 		<zip destfile="${dist.dir}/cli/cli-jre-win32.zip">
-			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-win32.zip"/>
+			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-win32.zip"/>
 	        <fileset file="${dist.dir}/cli/railo.exe" />
 		</zip>
 		<zip destfile="${dist.dir}/cli/cli-jre-win64.zip">
-			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-win64.zip"/>
+			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-win64.zip"/>
 	        <fileset file="${dist.dir}/cli/railo.exe" />
 		</zip>
 		<zip destfile="${dist.dir}/cli/cli-jre-linux32.zip">
-			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-linux32.zip"/>
+			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-linux32.zip"/>
 	        <fileset file="${dist.dir}/cli/railo" />
 		</zip>
 		<zip destfile="${dist.dir}/cli/cli-jre-linux64.zip">
-			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-linux64.zip"/>
+			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-linux64.zip"/>
 	        <fileset file="${dist.dir}/cli/railo" />
 		</zip>
 		<zip destfile="${dist.dir}/cli/cli-jre-darwin64.zip">
-			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${mvn.jre.version}/jre-${mvn.jre.version}-darwin64.zip"/>
+			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-darwin64.zip"/>
 	        <fileset file="${dist.dir}/cli/railo" />
 		</zip>
 		<pom-and-deploy pomid="cli-jre.pom" packaging="pom" buildtype="${mvn.type}"
@@ -191,10 +201,7 @@
  	</target>
 
  	<target name="build.cli.express" depends="build.cli">
- 		<!--
- 		<build-cli-express jre.version="${mvn.jre.6.version}" />
- 		-->
- 		<build-cli-express jre.version="${mvn.jre.7.version}" />
+ 		<build-cli-express jre.version="${jre.version}" />
  	</target>
 
 	<macrodef name="build-cli-express">
@@ -266,19 +273,27 @@ cd $reldir/build
 		</pom-and-deploy>
 	</target>
 
- 	<target name="build.cli.all" depends="build.cli.mvn,build.cli.express,build.cli.jre">
+ 	<target name="build.cli.all" depends="build.cli.mvn,build.cli.jre,build.cli.express">
 	</target>
 
 	<target name="build.cli.rpm" depends="build.cli.bin"  xmlns:redline="antlib:org.redline_rpm">
 		<mkdir dir="${rpm.repo}" />
 		<echo message="Making rpm in ${rpm.repo} Packager:${cli.packager.name} ${cli.packager.email} Version: ${cli.version}" />
 		<rpm-create rpm.repo="${rpm.repo}" rpm.release="1"
+			rpm.reponame="cfmlprojects" rpm.baseurl="http://cfmlprojects.org/artifacts/RPMS/noarch"
 			rpm.group="org.getrailo" rpm.name="railo-cli" rpm.version="${cli.version}"
 			rpm.packager="${cli.packager.name} ${cli.packager.email}"
-			rpm.url="http://getrailo.org">
+			rpm.url="http://getrailo.org" failonerror="${build.rpm.failonerror}"
+			rpm.keyring="${cfmlprojects.sign.keyring}" rpm.key="${cfmlprojects.sign.key.id}" 
+			rpm.passphrase="${cfmlprojects.sign.key.passphrase}">
 			<tarfileset file="${dist.dir}/cli/railo" prefix="/usr/bin"
 				 filemode="744" username="root" group="root"/>
 		</rpm-create>
+		<!--
+		<rpm-sign dir="${rpm.repo}"
+			gpgname="${cfmlprojects.sign.key.name}"
+			passphrase="${cfmlprojects.sign.key.passphrase}"/>
+		-->
 	</target>
 
 	<target name="build.cli.deb" depends="build.cli.bin" description="builds a .deb file for debian-based systems">
@@ -286,19 +301,25 @@ cd $reldir/build
 		<property name="deb.repo" value="${cfdistro.basedir}/artifacts/debs/noarch" />
 		<mkdir dir="${deb.repo}"/>
 	   	<delete file="${dist.dir}/railo-cli_${cli.version}-1_all.deb" />
-	   	<deb
+		<taskdef-dependency name="debtask" classname="debrepo.ant.DebTask" artifactId="debrepo" groupId="org.cfmlprojects" version="1.0.0" />
+	   	<debtask
 	        todir="${dist.dir}"
 	        package="railo-cli"
 	        section="web"
-	        depends="java-common">
+	        depends="java-common"
+            key="${cfmlprojects.sign.key.id}" passphrase="${cfmlprojects.sign.key.passphrase}"
+    		keyring="${cfmlprojects.sign.keyring}">
 	        <version upstream="${cli.version}"/>
 	        <maintainer name="${cli.packager.name}" email="${cli.packager.email}"/>
 	        <description synopsis="Railo CFML Engine">Railo is a high performance CFML engine.  Version: ${railo.version.long}.</description>
 	   		<tarfileset file="${dist.dir}/cli/railo" prefix="usr/local/bin" filemode="755"/>
-	   	</deb>
+	   	</debtask>
 	   	<echo message="Updating apt (deb) repo in ${deb.repo}"/>
 		<copy file="${dist.dir}/railo-cli_${cli.version}-1_all.deb" todir="${deb.repo}" />
-		<deb-repo dir="${deb.repo}" />
+		<deb-repo dir="${deb.repo}"
+			label="cfmlprojects" description="cfmlprojects.org debian repository"
+            key="${cfmlprojects.sign.key.id}" passphrase="${cfmlprojects.sign.key.passphrase}"
+    		keyring="${cfmlprojects.sign.keyring}" />
 	</target>
 
 <!-- 

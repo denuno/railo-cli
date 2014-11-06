@@ -32,7 +32,7 @@ public class ServletConfigImpl implements ServletConfig {
 	/**
 	 * @see javax.servlet.ServletConfig#getInitParameterNames()
 	 */
-	public Enumeration getInitParameterNames() {
+	public Enumeration<String> getInitParameterNames() {
 		return context.getInitParameterNames();
 	}
 

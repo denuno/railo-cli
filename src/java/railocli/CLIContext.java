@@ -25,6 +25,7 @@ import javax.servlet.descriptor.JspConfigDescriptor;
 
 import railo.cli.util.EnumerationWrapper;
 
+@SuppressWarnings("unchecked")
 public class CLIContext implements ServletContext {
 	private Map<String,Object> attributes;
 	private Map<String, String> parameters;
@@ -52,7 +53,7 @@ public class CLIContext implements ServletContext {
 	/**
 	 * @see javax.servlet.ServletContext#getAttributeNames()
 	 */
-	public Enumeration getAttributeNames() {
+    public Enumeration<String> getAttributeNames() {
 		return new EnumerationWrapper(attributes);
 	}
 	
@@ -66,7 +67,7 @@ public class CLIContext implements ServletContext {
 	/**
 	 * @see javax.servlet.ServletContext#getInitParameterNames()
 	 */
-	public Enumeration getInitParameterNames() {
+	public Enumeration<String> getInitParameterNames() {
 		return new EnumerationWrapper(parameters);
 	}
 
@@ -105,7 +106,7 @@ public class CLIContext implements ServletContext {
 	 */
 	public URL getResource(String realpath) throws MalformedURLException {
 		File file = getRealFile(realpath);
-		return file.toURL();
+		return file.toURI().toURL();
 	}
 
 	/**
@@ -134,7 +135,7 @@ public class CLIContext implements ServletContext {
 		return root;
 	}
 
-	public Set getResourcePaths(String realpath) {
+	public Set<String> getResourcePaths(String realpath) {
 		throw notSupported("getResourcePaths(String realpath)");
 	}
 
@@ -143,12 +144,10 @@ public class CLIContext implements ServletContext {
 	}
 
 	public ServletContext getContext(String key) {
-		// TODO ?
 		return this;
 	}
 
 	public RequestDispatcher getNamedDispatcher(String name) {
-		// TODO Auto-generated method stub
 		throw notSupported("getNamedDispatcher(String name)");
 	}
 
@@ -158,8 +157,6 @@ public class CLIContext implements ServletContext {
 	public void log(String msg, Throwable t) {// TODO better
 		if(t==null)System.out.println(msg);
 		else System.out.println(msg+":\n"+t.getMessage());
-	
-		
 		//if(t==null)log.log(Log.LEVEL_INFO, "ServletContext", msg);
 		//else log.log(Log.LEVEL_ERROR, "ServletContext", msg+":\n"+ExceptionUtil.getStacktrace(t,false));
 	}
@@ -210,12 +207,12 @@ public class CLIContext implements ServletContext {
 		throw notSupported("getServlet()");
 	}
 
-	public Enumeration getServletNames() {
+	public Enumeration<String> getServletNames() {
 		// deprecated
 		throw notSupported("getServlet()");
 	}
 
-	public Enumeration getServlets() {
+	public Enumeration<Servlet> getServlets() {
 		// deprecated
 		throw notSupported("getServlet()");
 	}
@@ -226,170 +223,137 @@ public class CLIContext implements ServletContext {
 
 	@Override
 	public Dynamic addFilter(String arg0, String arg1) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public Dynamic addFilter(String arg0, Filter arg1) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public Dynamic addFilter(String arg0, Class<? extends Filter> arg1) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public void addListener(String arg0) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public <T extends EventListener> void addListener(T arg0) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public void addListener(Class<? extends EventListener> arg0) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public javax.servlet.ServletRegistration.Dynamic addServlet(String arg0, String arg1) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public javax.servlet.ServletRegistration.Dynamic addServlet(String arg0, Servlet arg1) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public javax.servlet.ServletRegistration.Dynamic addServlet(String arg0, Class<? extends Servlet> arg1) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public <T extends Filter> T createFilter(Class<T> arg0) throws ServletException {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public <T extends EventListener> T createListener(Class<T> arg0) throws ServletException {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public <T extends Servlet> T createServlet(Class<T> arg0) throws ServletException {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public void declareRoles(String... arg0) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public ClassLoader getClassLoader() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public String getContextPath() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public Set<SessionTrackingMode> getDefaultSessionTrackingModes() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public int getEffectiveMajorVersion() {
-		// TODO Auto-generated method stub
 		return 0;
 	}
 
 	@Override
 	public int getEffectiveMinorVersion() {
-		// TODO Auto-generated method stub
 		return 0;
 	}
 
 	@Override
 	public Set<SessionTrackingMode> getEffectiveSessionTrackingModes() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public FilterRegistration getFilterRegistration(String arg0) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public Map<String, ? extends FilterRegistration> getFilterRegistrations() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public JspConfigDescriptor getJspConfigDescriptor() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public ServletRegistration getServletRegistration(String arg0) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public Map<String, ? extends ServletRegistration> getServletRegistrations() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public SessionCookieConfig getSessionCookieConfig() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public String getVirtualServerName() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public boolean setInitParameter(String arg0, String arg1) {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
 	public void setSessionTrackingModes(Set<SessionTrackingMode> arg0) {
-		// TODO Auto-generated method stub
-		
 	}
 
 }
