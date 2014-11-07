@@ -66,14 +66,13 @@ public class LoaderCLIMain {
 		String name = props.getProperty("name") != null ? props.getProperty("name") : "railo";
 		setName(name);
 		log.debug("cfml.cli.name: "+name);
-		String version = props.getProperty("version") != null ? props.getProperty("version") : "0.0.0.0";
         setShellPath(props.getProperty("shell") != null ? props.getProperty("shell") : "/cfml/cli/shell.cfm");
 
         cli_home = getCLI_HOME(cliArguments, props, arguments, config);
 
         log.debug("initial cfml.cli.home: "+cli_home);
 		if(!cli_home.exists()) {
-		    System.out.println("Configuring "+name+" "+version+" home: "+ cli_home + " (change with -"+name+"_home=/path/to/dir)");
+		    System.out.println("Configuring "+name+" home: "+ cli_home + " (change with -"+name+"_home=/path/to/dir)");
 		    cli_home.mkdir();
 		}
 		
