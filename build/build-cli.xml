@@ -152,12 +152,18 @@
  	</target>
 
 	<target name="build.cli.exe" description="creates an jar with the libs cli" depends="build.cli">
+		<property name="cfmlprojects.sign.exe.cert" value=""/>
+		<property name="cfmlprojects.sign.exe.key" value=""/>
+		<property name="cfmlprojects.sign.exe.passphrase" value=""/>
+		<!-- openssl rsa -in project.key -outform PVK -pvk-strong -out project.pvk -->
         <jar2exe
-        	jar="${dist.dir}/cli/railo-cli.jar" exe="${dist.dir}/cli/railo.exe"  
-        	icon="${src.dir}/resources/railo.ico" mutexName="railo.cli.Console" 
-        	headerType="console" customProcName="false" stayAlive="true"/>
+        	jar="${dist.dir}/cli/railo-cli.jar" exe="${dist.dir}/cli/railo.exe"
+        	icon="${src.dir}/resources/railo.ico" mutexName="railo.cli.Console"
+        	headerType="console" customProcName="false" stayAlive="true"
+            certfile="${cfmlprojects.sign.exe.cert}" keyfile="${cfmlprojects.sign.exe.key}"
+        	keypass="${cfmlprojects.sign.exe.passphrase}"/>
 		<zip destfile="${dist.dir}/cli/railo.win32.zip">
-	        <zipfileset file="${dist.dir}/cli/railo.exe" prefix="" />
+	        <zipfileset file="${dist.dir}/cli/railo.exe" prefix=""/>
 		</zip>
 	</target>
 
