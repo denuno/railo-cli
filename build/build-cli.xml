@@ -41,7 +41,9 @@
         -->
 		<dependency groupId="org.cfmlprojects" artifactId="runwar" version="${runwar.version}" dest="${railo.lib.dir}" unzip="false" type="jar" />
 		<dependency groupId="org.getrailo" artifactId="railo.libs" version="${railo.version.major}.0" dest="${railo.lib.dir}" unzip="true"/>
-		<dependency groupId="org.getrailo" artifactId="railo-jar" version="${railo.version.long}" dest="${temp.dir}/railolibs" unzip="false" type="jar" />
+        <dependency groupId="org.getrailo" artifactId="railo-jar" version="${railo.version.long}" dest="${temp.dir}/railolibs" unzip="false" type="jar" />
+        <mvn-repo id="java.repo" url="http://download.java.net/maven/2/" />
+        <dependency groupId="javax.mail" artifactId="mail" version="1.4.4" dest="${temp.dir}/railolibs" repoId="java.repo" unzip="false" type="jar" />
 		<path id="classpath">
 			<fileset dir="${railo.lib.dir}"/>
 			<fileset dir="${cfdistro.lib.dir}"/>
@@ -161,7 +163,13 @@
         	icon="${src.dir}/resources/railo.ico" mutexName="railo.cli.Console"
         	headerType="console" customProcName="false" stayAlive="true"
             certfile="${cfmlprojects.sign.exe.cert}" keyfile="${cfmlprojects.sign.exe.key}"
-        	keypass="${cfmlprojects.sign.exe.passphrase}"/>
+        	keypass="${cfmlprojects.sign.exe.passphrase}">
+        	<jre-element>
+                <jre path="./jre/" minVersion="1.6.0">
+                  <opt>-Duser.dir="%OLDPWD%";</opt>
+                </jre>
+        	</jre-element>
+        </jar2exe>
 		<zip destfile="${dist.dir}/cli/railo.win32.zip">
 	        <zipfileset file="${dist.dir}/cli/railo.exe" prefix=""/>
 		</zip>
