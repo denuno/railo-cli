@@ -39,7 +39,7 @@
         <copy file="${cfdistro.basedir}/lib/runwar-1.0.0.0.jar" todir="${temp.dir}/cli" />
 		<dependency groupId="org.getrailo" artifactId="railo.dep" classifier="javax-servlet" version="${railo.version.major}.0" dest="${railo.lib.dir}" type="jar" unzip="false"/>
         -->
-		<dependency groupId="org.cfmlprojects" artifactId="runwar" version="${runwar.version}" dest="${railo.lib.dir}" unzip="false" type="jar" />
+		<dependency groupId="org.cfmlprojects" artifactId="runwar" version="${cli.runwar.version}" dest="${railo.lib.dir}" unzip="false" type="jar" />
 		<dependency groupId="org.getrailo" artifactId="railo.libs" version="${railo.version.major}.0" dest="${railo.lib.dir}" unzip="true"/>
         <dependency groupId="org.getrailo" artifactId="railo-jar" version="${railo.version.long}" dest="${temp.dir}/railolibs" unzip="false" type="jar" />
         <mvn-repo id="java.repo" url="http://download.java.net/maven/2/" />
@@ -175,7 +175,7 @@
 		</zip>
 	</target>
 
- 	<target name="build.cli.jre" depends="build.cli">
+ 	<target name="build.cli.jre" depends="build.cli.bin, build.cli.exe">
  		<echo message="bundling ${jre.version} jre" />
 		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="win32" />
 		<dependency groupId="oracle" artifactId="jre" version="${jre.version}" type="zip" classifier="win64" />
