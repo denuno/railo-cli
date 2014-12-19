@@ -1,21 +1,22 @@
-<cfparam name="addClosingHTMLTags" default="#true#" type="boolean"><cfoutput>
-Railo #server.railo.version# Error (#catch.type#)
-<cfparam name="catch.message" default="">
-<cfparam name="catch.detail" default="">
+<cfsavecontent variable="CLIErrorOutput">
+<cfsetting enableCFoutputOnly = "true"/>
+<cfparam name="addClosingHTMLTags" default="#true#" type="boolean">
+<cfoutput>Railo #server.railo.version# Error (#catch.type#)
+<cfparam name="catch.message" default=""><cfparam name="catch.detail" default="">
 Message: #replace( HTMLEditFormat( trim( catch.message ) ), chr(10), '<br>', 'all' )#
 <cfif len( catch.detail )>
 Detail:
-  #replace( HTMLEditFormat( trim( catch.detail ) ), chr(10), '<br>', 'all' )#
+  #trim( catch.detail )#
 </cfif>
 <cfif structkeyexists( catch, 'errorcode' ) && len( catch.errorcode ) && catch.errorcode NEQ 0>
 Error Code: #catch.errorcode#
 </cfif>
 <cfif structKeyExists( catch, 'extendedinfo' ) && len( catch.extendedinfo )>
-Extended Info: #HTMLEditFormat( catch.extendedinfo )#
+Extended Info: #catch.extendedinfo#
 </cfif>
 <cfif structKeyExists( catch, 'additional' )>
 	<cfloop collection="#catch.additional#" item="key">
-  #key#: #replace( HTMLEditFormat( catch.additional[key] ), chr(10),'<br>', 'all' )#
+  #key#: #catch.additional[key]#
 	</cfloop>
 </cfif>
 <cfif structKeyExists( catch, 'tagcontext' )>
@@ -37,6 +38,13 @@ The Error Occurred in
 	</cfif>
 </cfif>
 Java Stacktrace:
-#replace( catch.stacktrace, chr(10), "<br><span style='margin-right: 1em;'>&nbsp;</span>", "all" )#
+#catch.stacktrace#
 Timestamp:<cfset timestamp = now()>#LsDateFormat( timestamp, 'short' )# #LsTimeFormat( timestamp, 'long' )#
 </cfoutput>
+</cfsavecontent>
+<cfset StringEscapeUtils = createObject("java","org.apache.commons.lang.StringEscapeUtils") />
+<cfset text = StringEscapeUtils.unescapeHTML(CLIErrorOutput) />
+<cfset text = replace(text,"<" & "br" & ">","","all")/>
+<cfset text = rereplace(text,"<" & "/?b" & ">","","all")/>
+<cfset text = rereplace(text,"(?m)^\s*","    ","all")/>
+<cfoutput>#text#</cfoutput>

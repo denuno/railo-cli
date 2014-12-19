@@ -3,7 +3,6 @@ package cliloader;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.FilenameFilter;
@@ -36,8 +35,7 @@ public class LoaderCLIMain {
     private static Boolean isBackground;
     private static File webRoot;
     private static File libDirectory;
-    private static File railoConfigServerDirectory;
-    private static File railoConfigWebDirectory;
+    private static File railoConfigServerDirectory,railoConfigWebDirectory,railoCLIConfigServerDirectory,railoCLIConfigWebDirectory;
     private static String name;
     private static String shellPath;
     private static File CLI_HOME;
@@ -206,10 +204,14 @@ public class LoaderCLIMain {
 		    }
 		}
 		
-		File configServerDir=new File(libDir.getParentFile(),"engine/railo/");
-		File configWebDir=new File(libDir.getParentFile(),"engine/railo/railo-web");
+		File configServerDir=new File(libDir.getParentFile(),"engine/railo/server/");
+		File configWebDir=new File(libDir.getParentFile(),"engine/railo/server/railo-web");
 		setRailoConfigServerDir(configServerDir);
         setRailoConfigWebDir(configWebDir);
+		File configCLIServerDir=new File(libDir.getParentFile(),"engine/railo/cli/");
+		File configCLIWebDir=new File(libDir.getParentFile(),"engine/railo/cli/railo-web");
+		setRailoCLIConfigServerDir(configCLIServerDir);
+        setRailoCLIConfigWebDir(configCLIWebDir);
 		props.setProperty("cfml.cli.home", cli_home.getAbsolutePath());
 		props.setProperty("cfml.cli.pwd", getCurrentDir());
 		props.setProperty("railo.config.server", configServerDir.getAbsolutePath());
@@ -288,7 +290,7 @@ public class LoaderCLIMain {
             cli = cl.loadClass("railocli.CLIMain");
             Method run = cli.getMethod("run",new Class[]{File.class,File.class,File.class,String.class,boolean.class});
             File webroot=new File(getPathRoot(uri)).getCanonicalFile();
-            run.invoke(null, webroot,getRailoConfigServerDir(),getRailoConfigWebDir(),uri,debug);
+            run.invoke(null, webroot,getRailoCLIConfigServerDir(),getRailoCLIConfigWebDir(),uri,debug);
         } catch (Exception e) {
             exitCode = 1;
             e.getCause().printStackTrace();
@@ -614,17 +616,27 @@ public class LoaderCLIMain {
     private static void setRailoConfigServerDir(File value) {
         railoConfigServerDirectory = value;
     }
-    
     private static File getRailoConfigServerDir() {
         return railoConfigServerDirectory;
     }
-    
     private static void setRailoConfigWebDir(File value) {
         railoConfigWebDirectory = value;
     }
-    
     private static File getRailoConfigWebDir() {
         return railoConfigWebDirectory;
+    }
+    
+    private static void setRailoCLIConfigServerDir(File value) {
+        railoCLIConfigServerDirectory = value;
+    }
+    private static File getRailoCLIConfigServerDir() {
+        return railoCLIConfigServerDirectory;
+    }
+    private static void setRailoCLIConfigWebDir(File value) {
+        railoCLIConfigWebDirectory = value;
+    }
+    private static File getRailoCLIConfigWebDir() {
+        return railoCLIConfigWebDirectory;
     }
     
     private static void setName(String value) {
