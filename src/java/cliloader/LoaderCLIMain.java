@@ -51,7 +51,7 @@ public class LoaderCLIMain {
         Boolean startServer = false;
         Boolean stopServer = false;
         Properties props = new Properties(), userProps = new Properties();
-        if(listContains(cliArguments,"-debug") > 0) {
+        if(listContains(cliArguments,"-debug") > -1) {
             debug = true;
             listRemoveContaining(cliArguments,"-debug");
             arguments = removeElement(arguments,"-debug");
@@ -87,7 +87,7 @@ public class LoaderCLIMain {
 		setLibDir(new File(cli_home,"lib").getCanonicalFile());
 		
 		// update/overwrite libs
-		if(listContains(cliArguments,"-update") > 0) {
+		if(listContains(cliArguments,"-update") > -1) {
 			System.out.println("updating "+name+" home");
 			updateLibs = true;
 			listRemoveContaining(cliArguments,"-update");
@@ -95,37 +95,37 @@ public class LoaderCLIMain {
 		}
 		
         // background
-        if(listContains(cliArguments,"-background") > 0) {
+        if(listContains(cliArguments,"-background") > -1) {
             setBackground(true);
             arguments = removeElement(arguments,"-background");
         } else {
             setBackground(false);
         }
 
-        if(listContains(cliArguments,"-stop") > 0) {
+        if(listContains(cliArguments,"-stop") > -1) {
 			stopServer = true;
 			setBackground(false);
 		}
 		
-		if(!updateLibs && (listContains(cliArguments,"-?")  > 0 || listContains(cliArguments,"-help") > 0)) {
+		if(!updateLibs && (listContains(cliArguments,"-?")  > -1 || listContains(cliArguments,"-help") > -1)) {
 			System.out.println(props.get("usage").toString().replace("/n",CR));
 			Thread.sleep(1000);
 			System.exit(0);
 		}
 		
 		// railo libs dir
-		if(listContains(cliArguments,"-lib") > 0) {
+		if(listContains(cliArguments,"-lib") > -1) {
 			String strLibs=config.get("lib");
 			setLibDir(new File(strLibs));
 			arguments = removeElementThenAdd(arguments,"-lib=",null);
 			listRemoveContaining(cliArguments,"-lib");
 		}
 
-		if(listContains(cliArguments,"-server") > 0) {
+		if(listContains(cliArguments,"-server") > -1) {
 			startServer=true;
 		}
 
-        if(listContains(cliArguments,"-webroot")  > 0 && config.get("webroot") != null) {
+        if(listContains(cliArguments,"-webroot")  > -1 && config.get("webroot") != null) {
             arguments = removeElement(arguments,"-webroot");
             setWebRoot(new File(config.get("webroot")).getCanonicalFile());
         } else {
@@ -136,7 +136,7 @@ public class LoaderCLIMain {
             }
         }
 		
-		if(listContains(cliArguments,"-shellpath") > 0) {
+		if(listContains(cliArguments,"-shellpath") > -1) {
             int shellpathIdx = listContains(cliArguments,"-shellpath");
             String shellpath = cliArguments.get(shellpathIdx);
             if(shellpath.indexOf('=') == -1) {
@@ -151,7 +151,7 @@ public class LoaderCLIMain {
 		}
         props.setProperty("cfml.cli.shell", getShellPath());
 
-        if(listContains(cliArguments,"-shell") > 0) {
+        if(listContains(cliArguments,"-shell") > -1) {
             startServer=false;
             log.debug("we will be running the shell");
             arguments = removeElement(arguments,"-shell");
@@ -469,18 +469,24 @@ public class LoaderCLIMain {
         return result;
 	}
 	
-	public static int listContains(ArrayList<String> argList, String text) {  
-		for(String item : argList)
-	        if(item.startsWith(text))
-	            return argList.indexOf(item);
-		return 0;
+	public static int listContains(ArrayList<String> argList, String text) {
+		int i = 0;
+		for(String item : argList) {
+			if(item.toLowerCase().startsWith(text.toLowerCase()))
+				return i;
+			i++;
+		}
+		return -1;
 	}
 	
 	public static int listContainsNoCase(ArrayList<String> argList, String text) {  
-	    for(String item : argList)
-	        if(item.toLowerCase().startsWith(text.toLowerCase()))
-	            return argList.indexOf(item);
-	    return 0;
+		int i = 0;
+	    for(String item : argList) {
+	    	if(item.toLowerCase().startsWith(text.toLowerCase()))
+	    		return i;
+	    	i++;
+	    }
+	    return -1;
 	}
 	
 	public static void listRemoveContaining(ArrayList<String> argList, String text) {
