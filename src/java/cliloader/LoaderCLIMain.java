@@ -486,7 +486,7 @@ public class LoaderCLIMain {
 	public static void listRemoveContaining(ArrayList<String> argList, String text) {
 		for (Iterator<String> it = argList.iterator(); it.hasNext();) {
 			String str = it.next();
-			if (str.startsWith(text)) {
+			if (str.toLowerCase().startsWith(text.toLowerCase())) {
 				it.remove();
 			}
 		}
