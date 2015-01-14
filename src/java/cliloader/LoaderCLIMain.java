@@ -258,7 +258,7 @@ public class LoaderCLIMain {
             cliArguments.remove(executeIndex+1);
             cliArguments.remove(executeIndex);
             log.debug("Executing: "+uri);
-        } else if(cliArguments.size() > 0 && new File(cliArguments.get(0)).exists()) {
+        } else if(cliArguments.size() > 0 && new File(cliArguments.get(0)).isFile()) {
             String filename = cliArguments.get(0);
             // this will force the shell to run the execute command
             if(filename.endsWith(".rs") || filename.endsWith(".boxr")) {
