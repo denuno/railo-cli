@@ -192,15 +192,15 @@
 		</zip>
 		<zip destfile="${dist.dir}/cli/cli-jre-linux32.zip">
 			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-linux32.zip"/>
-	        <fileset file="${dist.dir}/cli/railo" filemode="711" prefix="" />
+	        <zipfileset file="${dist.dir}/cli/railo" filemode="711" prefix="" />
 		</zip>
 		<zip destfile="${dist.dir}/cli/cli-jre-linux64.zip">
 			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-linux64.zip"/>
-	        <fileset file="${dist.dir}/cli/railo" filemode="711" prefix="" />
+	        <zipfileset file="${dist.dir}/cli/railo" filemode="711" prefix="" />
 		</zip>
 		<zip destfile="${dist.dir}/cli/cli-jre-darwin64.zip">
 			<zipfileset prefix="jre" src="${maven.repo.local}/oracle/jre/${jre.version}/jre-${jre.version}-darwin64.zip"/>
-	        <fileset file="${dist.dir}/cli/railo" filemode="711" prefix="" />
+	        <zipfileset file="${dist.dir}/cli/railo" filemode="711" prefix="" />
 		</zip>
 		<pom-and-deploy pomid="cli-jre.pom" packaging="pom" buildtype="${mvn.type}"
 		 groupId="org.getrailo" artifactId="railo.cli.jre" version="${cli.version}" name="railo.cli.jre">
@@ -247,17 +247,17 @@ cd $reldir/build
 			</zip>
 			<zip destfile="${dist.dir}/express/cli-express-jre-linux32.zip">
 				<zipgroupfileset file="${maven.repo.local}/oracle/jre/@{jre.version}/jre-@{jre.version}-linux32.zip"/>
-		        <fileset file="${dist.dir}/cli/railo" filemode="711" prefix="" />
+		        <zipfileset file="${dist.dir}/cli/railo" filemode="711" prefix="" />
 		        <zipfileset dir="${temp.dir}/express/webroot" prefix="webroot/" />
 			</zip>
 			<zip destfile="${dist.dir}/express/cli-express-jre-linux64.zip">
 				<zipgroupfileset file="${maven.repo.local}/oracle/jre/@{jre.version}/jre-@{jre.version}-linux64.zip"/>
-		        <fileset file="${dist.dir}/cli/railo" filemode="711" prefix="" />
+		        <zipfileset file="${dist.dir}/cli/railo" filemode="711" prefix="" />
 		        <zipfileset dir="${temp.dir}/express/webroot" prefix="webroot/" />
 			</zip>
 			<zip destfile="${dist.dir}/express/cli-express-jre-darwin64.zip">
 				<zipgroupfileset file="${maven.repo.local}/oracle/jre/@{jre.version}/jre-@{jre.version}-darwin64.zip"/>
-		        <fileset file="${dist.dir}/cli/railo" filemode="711" prefix="" />
+		        <zipfileset file="${dist.dir}/cli/railo" filemode="711" prefix="" />
 		        <zipfileset dir="${temp.dir}/express/webroot" prefix="webroot/" />
 			</zip>
 			<pom-and-deploy pomid="cli-express.pom" packaging="pom" buildtype="${mvn.type}"
