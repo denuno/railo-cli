@@ -61,20 +61,26 @@ public class LoaderCLIMain {
         }
 		try {
 	        props.load(classLoader.getSystemResourceAsStream("cliloader/cli.properties"));
-	        File cliPropFile = new File(getJarDir(),"cli.properties");
-	        if(cliPropFile.isFile()){
-	            log.debug("merging properties from " + cliPropFile.getCanonicalPath());
-	            FileInputStream fi = new FileInputStream(cliPropFile);
-	            userProps.load(fi);
-	            fi.close();
-	            props = mergeProperties(props,userProps);
-	        }
 		} catch (IOException e) { e.printStackTrace(); }
         log.debug("initial arguments:"+Arrays.toString(arguments));
 		Map<String,String> config=toMap(arguments);
 		String name = props.getProperty("name") != null ? props.getProperty("name") : "railo";
 		setName(name);
-		log.debug("cfml.cli.name: "+name);
+
+		// merge any user defined properties
+		File cliPropFile = new File(getJarDir(),getName().toLowerCase() + ".properties");
+        if(!cliPropFile.isFile()) {
+            cliPropFile = new File(getJarDir(),"cli.properties");
+        }
+        if(cliPropFile.isFile()){
+            log.debug("merging properties from " + cliPropFile.getCanonicalPath());
+            FileInputStream fi = new FileInputStream(cliPropFile);
+            userProps.load(fi);
+            fi.close();
+            props = mergeProperties(props,userProps);
+        }
+
+        log.debug("cfml.cli.name: "+name);
         setShellPath(props.getProperty("shell") != null ? props.getProperty("shell") : "/cfml/cli/shell.cfm");
 
         cli_home = getCLI_HOME(cliArguments, props, arguments, config);
@@ -576,7 +582,10 @@ public class LoaderCLIMain {
                 listRemoveContaining(cliArguments,"-"+home);
             }
             if(cli_home == null){
-                File cliPropFile = new File(getJarDir(),"cli.properties");
+                File cliPropFile = new File(getJarDir(),getName().toLowerCase() + ".properties");
+                if(!cliPropFile.isFile()) {
+                    cliPropFile = new File(getJarDir(),"cli.properties");
+                }
                 if(cliPropFile.isFile()){
                     Properties userProps = new Properties();
                     FileInputStream fi;
