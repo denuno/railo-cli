@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
+import runwar.LaunchUtil;
+
 public class LoaderCLIMain {
 
 	private static String LIB_ZIP_PATH = "libs.zip";
@@ -41,6 +43,7 @@ public class LoaderCLIMain {
     private static File CLI_HOME;
     private static URLClassLoader _classLoader;
     private static String CR = System.getProperty("line.separator").toString();
+    private static String serverName = "default";
 
 	@SuppressWarnings("static-access")
     public static void main(String[] arguments) throws Throwable {
@@ -51,14 +54,22 @@ public class LoaderCLIMain {
         Boolean startServer = false;
         Boolean stopServer = false;
         Properties props = new Properties(), userProps = new Properties();
-        if(listContains(cliArguments,"-debug") > 0) {
+        if(listContains(cliArguments,"-debug")) {
             debug = true;
             listRemoveContaining(cliArguments,"-debug");
             arguments = removeElement(arguments,"-debug");
         }
 		try {
 	        props.load(classLoader.getSystemResourceAsStream("cliloader/cli.properties"));
-	    } catch (IOException e) { e.printStackTrace(); }
+	        File cliPropFile = new File(getJarDir(),"cli.properties");
+	        if(cliPropFile.isFile()){
+	            log.debug("merging properties from " + cliPropFile.getCanonicalPath());
+	            FileInputStream fi = new FileInputStream(cliPropFile);
+	            userProps.load(fi);
+	            fi.close();
+	            props = mergeProperties(props,userProps);
+	        }
+		} catch (IOException e) { e.printStackTrace(); }
         log.debug("initial arguments:"+Arrays.toString(arguments));
 		Map<String,String> config=toMap(arguments);
 		String name = props.getProperty("name") != null ? props.getProperty("name") : "railo";
@@ -67,6 +78,7 @@ public class LoaderCLIMain {
         setShellPath(props.getProperty("shell") != null ? props.getProperty("shell") : "/cfml/cli/shell.cfm");
 
         cli_home = getCLI_HOME(cliArguments, props, arguments, config);
+        arguments = removeElement(arguments,"-"+getName()+"_home");
 
         log.debug("initial cfml.cli.home: "+cli_home);
 		if(!cli_home.exists()) {
@@ -74,58 +86,66 @@ public class LoaderCLIMain {
 		    cli_home.mkdir();
 		}
 		
-        if(new File(cli_home,"user.properties").exists()){
-            FileInputStream fi = new FileInputStream(new File(cli_home,"user.properties"));
+        if(new File(cli_home,"cli.properties").isFile()){
+            FileInputStream fi = new FileInputStream(new File(cli_home,"cli.properties"));
             userProps.load(fi);
             fi.close();
+            props = mergeProperties(props,userProps);
         } else {
 //            userProps.put("cfml.cli.home", cli_home.getAbsolutePath());
-//            FileOutputStream fo = new FileOutputStream(new File(cli_home,"user.properties"));
+//            FileOutputStream fo = new FileOutputStream(new File(cli_home,"cli.properties"));
 //            userProps.store(fo,null);
         }
 
+        // update/overwrite libs
+        if(listContains(cliArguments,"-update")) {
+            System.out.println("updating "+name+" home");
+            updateLibs = true;
+            listRemoveContaining(cliArguments,"-update");
+            arguments = removeElement(arguments,"-update");
+        }
+        
 		setLibDir(new File(cli_home,"lib").getCanonicalFile());
 		
-		// update/overwrite libs
-		if(listContains(cliArguments,"-update") > 0) {
-			System.out.println("updating "+name+" home");
-			updateLibs = true;
-			listRemoveContaining(cliArguments,"-update");
-			arguments = removeElement(arguments,"-update");
-		}
-		
         // background
-        if(listContains(cliArguments,"-background") > 0) {
+        if(listContains(cliArguments,"-background")) {
             setBackground(true);
             arguments = removeElement(arguments,"-background");
         } else {
             setBackground(false);
         }
 
-        if(listContains(cliArguments,"-stop") > 0) {
+        if(listContains(cliArguments,"-stop")) {
 			stopServer = true;
 			setBackground(false);
 		}
 		
-		if(!updateLibs && (listContains(cliArguments,"-?")  > 0 || listContains(cliArguments,"-help") > 0)) {
+        if(listContains(cliArguments,"-name")) {
+            setServerName(config.get("name"));
+            log.debug("Set server name to" + getServerName());
+            arguments = removeElement(arguments,"-name");
+            listRemoveContaining(cliArguments,"-name");
+        }
+        
+		if(!updateLibs && (listContains(cliArguments,"-?") || listContains(cliArguments,"-help"))) {
 			System.out.println(props.get("usage").toString().replace("/n",CR));
 			Thread.sleep(1000);
 			System.exit(0);
 		}
 		
 		// railo libs dir
-		if(listContains(cliArguments,"-lib") > 0) {
+		if(listContains(cliArguments,"-lib")) {
 			String strLibs=config.get("lib");
 			setLibDir(new File(strLibs));
 			arguments = removeElementThenAdd(arguments,"-lib=",null);
 			listRemoveContaining(cliArguments,"-lib");
 		}
 
-		if(listContains(cliArguments,"-server") > 0) {
+		if(listContains(cliArguments,"-server")) {
 			startServer=true;
 		}
 
-        if(listContains(cliArguments,"-webroot")  > 0 && config.get("webroot") != null) {
+        if(listContains(cliArguments,"-webroot")  && config.get("webroot") != null) {
             arguments = removeElement(arguments,"-webroot");
             setWebRoot(new File(config.get("webroot")).getCanonicalFile());
         } else {
@@ -136,8 +156,8 @@ public class LoaderCLIMain {
             }
         }
 		
-		if(listContains(cliArguments,"-shellpath") > 0) {
-            int shellpathIdx = listContains(cliArguments,"-shellpath");
+		if(listContains(cliArguments,"-shellpath")) {
+            int shellpathIdx = listIndexOf(cliArguments,"-shellpath");
             String shellpath = cliArguments.get(shellpathIdx);
             if(shellpath.indexOf('=') == -1) {
                 setShellPath(cliArguments.get(shellpathIdx+1));
@@ -151,7 +171,7 @@ public class LoaderCLIMain {
 		}
         props.setProperty("cfml.cli.shell", getShellPath());
 
-        if(listContains(cliArguments,"-shell") > 0) {
+        if(listContains(cliArguments,"-shell") ) {
             startServer=false;
             log.debug("we will be running the shell");
             arguments = removeElement(arguments,"-shell");
@@ -205,7 +225,7 @@ public class LoaderCLIMain {
 		}
 		
 		File configServerDir=new File(libDir.getParentFile(),"engine/railo/server/");
-		File configWebDir=new File(libDir.getParentFile(),"engine/railo/server/railo-web");
+		File configWebDir=new File(libDir.getParentFile(),"engine/railo/server/railo-web/"+getServerName());
 		setRailoConfigServerDir(configServerDir);
         setRailoConfigWebDir(configWebDir);
 		File configCLIServerDir=new File(libDir.getParentFile(),"engine/railo/cli/");
@@ -318,21 +338,23 @@ public class LoaderCLIMain {
         if(isBackground()) {
             addArgs= new String[] {
                     "-war",webRoot.getPath(),
-                    "--railoserver",configServerDir.getAbsolutePath(),
-                    "--railoweb",configWebDir.getAbsolutePath(),
+                    "--server-name",getServerName(),
+                    "--railo-server-config",configServerDir.getAbsolutePath(),
+                    "--railo-web-config",configWebDir.getAbsolutePath(),
                     "--background","true",
-                    "--iconpath",libDir.getAbsolutePath() + "/trayicon.png",
-                    "--libdir",libDir.getPath(),
+                    "--tray-icon",libDir.getAbsolutePath() + "/trayicon.png",
+                    "--lib-dirs",libDir.getPath(),
                     "--debug",Boolean.toString(debug),
                     "--processname",name
                     };
         } else {
             addArgs= new String[] {
                     "-war",webRoot.getPath(),
-                    "--railoserver",configServerDir.getAbsolutePath(),
-                    "--railoweb",configWebDir.getAbsolutePath(),
-                    "--iconpath",libDir.getAbsolutePath() + "/trayicon.png",
-                    "--libdir",libDir.getPath(),
+                    "--server-name",getServerName(),
+                    "--railo-server-config",configServerDir.getAbsolutePath(),
+                    "--railo-web-config",configWebDir.getAbsolutePath(),
+                    "--tray-icon",libDir.getAbsolutePath() + "/trayicon.png",
+                    "--lib-dirs",libDir.getPath(),
                     "--background","false",
                     "--debug",Boolean.toString(debug),
                     "--processname",name
@@ -412,7 +434,7 @@ public class LoaderCLIMain {
 		final List<String> list =  new ArrayList<String>();
 		Collections.addAll(list, input);
 		for(String item: input) {
-	        if(item.startsWith(deleteMe)) {
+	        if(item.toLowerCase().startsWith(deleteMe.toLowerCase())) {
 	        	list.remove(item);
 	        }
 		}
@@ -469,24 +491,29 @@ public class LoaderCLIMain {
         return result;
 	}
 	
-	public static int listContains(ArrayList<String> argList, String text) {  
-		for(String item : argList)
-	        if(item.startsWith(text))
-	            return argList.indexOf(item);
-		return 0;
+	public static boolean listContains(ArrayList<String> argList, String text) {  
+	    // check for args with "--" too
+	    if(listIndexOf(argList,text) != -1 || listIndexOf(argList,"-"+text) != -1)
+	        return true;
+		return false;
 	}
 	
-	public static int listContainsNoCase(ArrayList<String> argList, String text) {  
-	    for(String item : argList)
-	        if(item.toLowerCase().startsWith(text.toLowerCase()))
-	            return argList.indexOf(item);
-	    return 0;
+	public static int listIndexOf(ArrayList<String> argList, String text) {  
+	    int index = 0;
+	    for(String item : argList) {
+	        if(item.startsWith(text) || item.startsWith("-"+text)) {
+	            return index;
+	        }
+	        index++;
+	    }
+	    return -1;
 	}
 	
 	public static void listRemoveContaining(ArrayList<String> argList, String text) {
 		for (Iterator<String> it = argList.iterator(); it.hasNext();) {
 			String str = it.next();
-			if (str.startsWith(text)) {
+			// check for "--" too
+			if (str.toLowerCase().startsWith(text.toLowerCase()) || str.toLowerCase().startsWith('-'+text.toLowerCase())) {
 				it.remove();
 			}
 		}
@@ -522,6 +549,11 @@ public class LoaderCLIMain {
         return System.getProperty("user.dir");
     }
     
+    private static String getJarDir() {
+        String path = new File(LoaderCLIMain.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getParent();
+        return path;
+    }
+    
     private static void setCLI_HOME(File value) {
         CLI_HOME = value;
     }
@@ -534,44 +566,55 @@ public class LoaderCLIMain {
         File cli_home = null;
         String name = getName();
         String home = name+"_home";
-        String homeLower = (name+"_home").toLowerCase();
-        String homeUpper = (name+"_home").toUpperCase();
         if(getCLI_HOME() == null) {
             Map<String, String> env = System.getenv();
-            log.debug("home: checking for command line argument "+homeLower);
-            if (config.get(homeLower) != null) {
-                cli_home = new File(config.get(homeLower));
-                arguments = removeElement(arguments,"-"+homeLower);
-                listRemoveContaining(cliArguments,"-"+homeLower);
+            log.debug("home: checking for command line argument "+home);
+            if (mapGetNoCase(config,home) != null) {
+                String homeArg = mapGetNoCase(config,home);
+                cli_home = new File(homeArg);
+                arguments = removeElement(arguments,"-"+home);
+                listRemoveContaining(cliArguments,"-"+home);
+            }
+            if(cli_home == null){
+                File cliPropFile = new File(getJarDir(),"cli.properties");
+                if(cliPropFile.isFile()){
+                    Properties userProps = new Properties();
+                    FileInputStream fi;
+                    try {
+                        log.debug("checking for home in properties from " + cliPropFile.getCanonicalPath());
+                        fi = new FileInputStream(cliPropFile);
+                        userProps.load(fi);
+                        fi.close();
+                        if(mapGetNoCase(userProps,"cli.home") != null){
+                            cli_home = new File(mapGetNoCase(userProps,"cli.home"));
+                        } else if(mapGetNoCase(userProps,home) != null){
+                            cli_home = new File(mapGetNoCase(userProps,home));
+                        }
+                    } catch (IOException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
             }
             if(cli_home == null){
                 log.debug("home: checking for environment variable");
-                if (env.get(home) != null) {
-                    cli_home = new File(env.get(home));
-                } else if (env.get(homeLower) != null) {
-                    cli_home = new File(env.get(homeLower));
-                } else if (env.get(homeUpper) != null) {
-                    cli_home = new File(env.get(homeUpper));
+                if (mapGetNoCase(env,home) != null) {
+                    cli_home = new File(mapGetNoCase(env,home));
                 }
             }
             if(cli_home == null){
                 log.debug("home: checking for system property");
-                if (System.getProperty(home) != null) {
-                    cli_home = new File(System.getProperty(home));
-                } else if (System.getProperty(homeLower) != null) {
-                    cli_home = new File(System.getProperty(homeLower));
-                } else if (System.getProperty(homeUpper) != null) {
-                    cli_home = new File(System.getProperty(homeUpper));
+                if(mapGetNoCase(System.getProperties(),home) != null){
+                    cli_home = new File(mapGetNoCase(System.getProperties(),home));
                 }
             }
             if(cli_home == null){
                 log.debug("home: checking cli.properties");
-                if (props.getProperty(home) != null) {
-                    cli_home = new File(props.getProperty(home));
-                } else if (props.getProperty(homeLower) != null) {
-                    cli_home = new File(props.getProperty(homeLower));
-                } else if (props.getProperty(homeUpper) != null) {
-                    cli_home = new File(props.getProperty(homeUpper));
+                if(mapGetNoCase(props,home) != null){
+                    cli_home = new File(mapGetNoCase(props,home));
+                }
+                else if(mapGetNoCase(props,"cli.home") != null){
+                    cli_home = new File(mapGetNoCase(props,"cli.home"));
                 }
             }
             if(cli_home == null){
@@ -588,7 +631,38 @@ public class LoaderCLIMain {
         log.debug("home: "+cli_home.getAbsolutePath());
         return cli_home;
     }
+    
+    private static Properties mergeProperties(Properties source, Properties override){
+        Properties merged = new Properties();
+        merged.putAll(source);
+        merged.putAll(override);
+        return merged;
+    }
 
+    
+    private static String mapGetNoCase(Map<String, String> source, String text) {
+        for (
+        Iterator<String> it = source.keySet().iterator(); it.hasNext();) {
+            String str = it.next();
+            // check for "--" too
+            if (str.toLowerCase().startsWith(text.toLowerCase()) || str.toLowerCase().startsWith('-'+text.toLowerCase())) {
+                return source.get(str);
+            }
+        }
+        return null;
+    }
+    
+    private static String mapGetNoCase(Properties source, String text) {
+        for (Iterator<?> it = source.keySet().iterator(); it.hasNext();) {
+            String str = (String) it.next();
+            // check for "--" too
+            if (str.toLowerCase().startsWith(text.toLowerCase()) || str.toLowerCase().startsWith('-'+text.toLowerCase())) {
+                return (String) source.get(str);
+            }
+        }
+        return null;
+    }
+    
     private static Boolean isBackground() {
         return isBackground;
     }
@@ -645,6 +719,14 @@ public class LoaderCLIMain {
     
     private static String getName() {
         return name;
+    }
+    
+    private static void setServerName(String value) {
+        serverName = value;
+    }
+    
+    private static String getServerName() {
+        return serverName == null ? "default" : serverName;
     }
     
     private static void setShellPath(String value) {
