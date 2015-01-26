@@ -582,6 +582,10 @@ public class LoaderCLIMain {
             log.debug("home: checking for command line argument "+home);
             if (mapGetNoCase(config,home) != null) {
                 String homeArg = mapGetNoCase(config,home);
+                if(homeArg.length() == 0) {
+                    System.err.println("The home directory cannot be empty");
+                    System.exit(1);
+                }
                 cli_home = new File(homeArg);
                 arguments = removeElement(arguments,"-"+home);
                 listRemoveContaining(cliArguments,"-"+home);
