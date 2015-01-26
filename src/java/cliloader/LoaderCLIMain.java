@@ -368,17 +368,18 @@ public class LoaderCLIMain {
         }
         args = removeElementThenAdd(args,"-server",addArgs);
         if(debug) System.out.println("Server args: " + arrayToList(args," "));
-//        runwarURL[1] = libDir.listFiles(new PrefixFilter("railocli"))[0].toURI().toURL();
 //        URLClassLoader rrcl = new URLClassLoader(runwarURL,ClassLoader.getSystemClassLoader());
-//        URLClassLoader cl = new URLClassLoader(runwarURL,null);
 //        URLClassLoader empty = new URLClassLoader(new URL[0],null);
 //        XercesFriendlyURLClassLoader cl = new XercesFriendlyURLClassLoader(urls,null);
 //        Thread.currentThread().setContextClassLoader(cl);
+        URL[] urls = new URL[1];
+        urls[0] = libDir.listFiles(new PrefixFilter("runwar"))[0].toURI().toURL();
+        URLClassLoader cl = new URLClassLoader(urls,getClassLoader());
         Class<?> runwar;
-        URLClassLoader cl = getClassLoader();
         try{
             runwar = cl.loadClass("runwar.Server");
             Method startServer = runwar.getMethod("startServer",new Class[]{String[].class, URLClassLoader.class});
+            Thread.currentThread().setContextClassLoader(cl);
             startServer.invoke(runwar.getConstructor().newInstance(), new Object[]{args, cl});
         } catch (Exception e) {
             exitCode = 1;
@@ -418,6 +419,10 @@ public class LoaderCLIMain {
                 libDir=new File(libDir,"lib");
                 setLibDir(libDir);
                 children = libDir.listFiles(new ExtFilter(".jar"));
+            }
+            if(children == null || children.length<2) {
+                System.out.println("Could not find libraries");
+                System.exit(1);
             }
             
             URL[] urls = new URL[children.length];

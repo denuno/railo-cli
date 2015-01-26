@@ -43,7 +43,7 @@ component {
 				& " -war ""#webroot#"" --background #background# --port #portNumber# --debug #debug#"
 				& " --stop-port #socket# --processname ""#processName#"" --log-dir ""#logdir#"""
 				& " --open-browser #openbrowser# --open-url http://127.0.0.1:#portNumber#"
-				& " --libdir ""#variables.libdir#"" --iconpath ""#variables.libdir#/trayicon.png""";
+				& " --lib-dirs ""#variables.libdir#"" --tray-icon ""#variables.libdir#/trayicon.png""";
 		serverInfo.port = portNumber;
 		serverInfo.stopsocket = socket;
 		serverInfo.logdir = logdir;
