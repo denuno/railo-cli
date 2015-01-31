@@ -23,8 +23,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
-import runwar.LaunchUtil;
-
 public class LoaderCLIMain {
 
 	private static String LIB_ZIP_PATH = "libs.zip";
@@ -194,6 +192,33 @@ public class LoaderCLIMain {
 			}
 		}
 
+        if(libDir.exists()){
+            File versionFile = new File(libDir,"version.properties");
+            if(versionFile.exists()){
+                try{
+                    String installedVersion = Util.readFile(versionFile.getPath()).trim();
+                    String currentVersion = Util.getResourceAsString(VERSION_PROPERTIES_PATH).trim();
+                    if(!installedVersion.equals(currentVersion)){
+                        String autoUpdate = props.getProperty("cfml.cli.autoupdate");
+                        if(autoUpdate != null && Boolean.parseBoolean(autoUpdate)) {
+                            log.warn("Current version and installed versions do not match! /n   current: "
+                                    +currentVersion + "\n installed: " + installedVersion 
+                                    + "\n*updating installed version");
+                            updateLibs = true;
+                        } else {
+                            log.warn("Current version and installed versions do not match! /n   current: "
+                                    +currentVersion + "\n installed: " + installedVersion 
+                                    + "/nrun '"+ name + " -update' to install new version");
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("could not determine version: " + e.getMessage());
+                }
+            } else {
+                log.debug("no version.properties: " + versionFile.getAbsolutePath());
+            }
+        }
+        
 		if (!libDir.exists() || libDir.listFiles(new ExtFilter(".jar")).length < 2 
 				|| updateLibs) {
 			System.out.println("Library path: " + libDir);
@@ -209,25 +234,6 @@ public class LoaderCLIMain {
 				System.out.println("updated! ctrl-c now or wait a few seconds for exit..");
 				System.exit(0);
 			}
-		}
-		
-		if(libDir.exists()){
-		    File versionFile = new File(libDir,"version.properties");
-		    if(versionFile.exists()){
-		        try{
-		            String installedVersion = Util.readFile(versionFile.getPath()).trim();
-		            String currentVersion = Util.getResourceAsString(VERSION_PROPERTIES_PATH).trim();
-		            if(!installedVersion.equals(currentVersion)){
-		                log.warn("Current version and installed versions do not match! /n   current: "
-		                        +currentVersion + "\n installed: " + installedVersion 
-		                        + "/nrun '"+ name + " -update' to install new version");
-		            }
-		        } catch (Exception e) {
-		            log.warn("could not determine version: " + e.getMessage());
-		        }
-		    } else {
-		        log.debug("no version.properties: " + versionFile.getAbsolutePath());
-		    }
 		}
 		
 		File configServerDir=new File(libDir.getParentFile(),"engine/railo/server/");
