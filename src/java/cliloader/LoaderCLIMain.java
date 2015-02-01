@@ -238,11 +238,11 @@ public class LoaderCLIMain {
 		}
 		
 		File configServerDir=new File(libDir.getParentFile(),"engine/cfml/server/");
-		File configWebDir=new File(libDir.getParentFile(),"engine/cfml/server/railo-web/"+getServerName());
+		File configWebDir=new File(libDir.getParentFile(),"engine/cfml/server/cfml-web/"+getServerName());
 		setRailoConfigServerDir(configServerDir);
         setRailoConfigWebDir(configWebDir);
 		File configCLIServerDir=new File(libDir.getParentFile(),"engine/cfml/cli/");
-		File configCLIWebDir=new File(libDir.getParentFile(),"engine/cfml/cli/railo-web");
+		File configCLIWebDir=new File(libDir.getParentFile(),"engine/cfml/cli/cfml-web");
 		setRailoCLIConfigServerDir(configCLIServerDir);
         setRailoCLIConfigWebDir(configCLIWebDir);
 		props.setProperty("cfml.cli.home", cli_home.getAbsolutePath());

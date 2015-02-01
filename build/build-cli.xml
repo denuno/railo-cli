@@ -59,14 +59,14 @@
 
 		<mkdir dir="${temp.dir}/engine" />
 		<configure-railo-web 
-			config-server="${temp.dir}/engine/railo/cli/railo-server/context/railo-server.xml"
-			config-web="${temp.dir}/engine/railo/cli/railo-web/railo-web.xml.cfm"
-			dump-cfc="${temp.dir}/engine/railo/cli/railo-server/context/library/tag/Dump.cfc"/>
-		<copy file="${src.dir}/resources/error-cli.cfm" todir="${temp.dir}/engine/railo/cli/railo-web/context/templates/error/" />
+			config-server="${temp.dir}/engine/cfml/cli/cfml-server/context/railo-server.xml"
+			config-web="${temp.dir}/engine/cfml/cli/cfml-web/railo-web.xml.cfm"
+			dump-cfc="${temp.dir}/engine/cfml/cli/cfml-server/context/library/tag/Dump.cfc"/>
+		<copy file="${src.dir}/resources/error-cli.cfm" todir="${temp.dir}/engine/cfml/cli/cfml-web/context/templates/error/" />
 <!-- 
- 		<replace file="${temp.dir}/engine/railo/railo-server/context/library/tag/Dump.cfc" token="modern&quot;;" value="text&quot;;"/>
+ 		<replace file="${temp.dir}/engine/cfml/cfml-server/context/library/tag/Dump.cfc" token="modern&quot;;" value="text&quot;;"/>
  -->
-		<antcontrib:var name="railo.config.file" value="${temp.dir}/engine/railo/cli/railo-web/railo-web.xml.cfm" />
+		<antcontrib:var name="railo.config.file" value="${temp.dir}/engine/cfml/cli/cfml-web/railo-web.xml.cfm" />
 		<railo-error-template path="/railo-context/templates/error/error-cli.cfm" />
 		<copy todir="${temp.dir}/cli/bin/resource">
     	<fileset dir="${src.dir}/resources"/>
