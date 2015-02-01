@@ -115,5 +115,6 @@
 	<classpathentry kind="lib" path="/runwar/lib/jboss-el-api_3.0_spec-1.0.0.Beta1.jar"/>
 	<classpathentry kind="lib" path="/runwar/lib/jboss-jsp-api_2.3_spec-1.0.0.Beta1.jar"/>
 	<classpathentry kind="lib" path="/runwar/lib/jboss-servlet-api_3.1_spec-1.0.0.Final.jar"/>
+	<classpathentry kind="lib" path="lib/jcommander-1.47.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

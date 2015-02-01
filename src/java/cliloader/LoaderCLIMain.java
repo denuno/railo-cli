@@ -28,6 +28,7 @@ public class LoaderCLIMain {
 	private static String LIB_ZIP_PATH = "libs.zip";
 	private static String CFML_ZIP_PATH = "cfml.zip";
 	private static String ENGINECONF_ZIP_PATH = "engine.zip";
+	private static String CFML_VERSION_PATH = "cliloader/cfml.version";
 	private static String VERSION_PROPERTIES_PATH = "cliloader/version.properties";
 	private static ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
 	private static Boolean debug = false;
@@ -184,36 +185,22 @@ public class LoaderCLIMain {
 
 		File libDir = getLibDir();
 		props.setProperty("cfml.cli.lib", libDir.getAbsolutePath());
+		File cfmlDir = new File(cli_home.getPath()+"/cfml");
 		
 		// clean out any leftover pack files (an issue on windows)
         Util.cleanUpUnpacked(libDir);
 
-        if(libDir.exists()){
-            File versionFile = new File(libDir,"version.properties");
-            if(versionFile.exists()){
-                try{
-                    String installedVersion = Util.readFile(versionFile.getPath()).trim();
-                    String currentVersion = Util.getResourceAsString(VERSION_PROPERTIES_PATH).trim();
-                    if(!installedVersion.equals(currentVersion)){
-                        String autoUpdate = props.getProperty("cfml.cli.autoupdate");
-                        if(autoUpdate != null && Boolean.parseBoolean(autoUpdate)) {
-                            log.warn("Current version and installed versions do not match! /n   current: "
-                                    +currentVersion + "\n installed: " + installedVersion 
-                                    + "\n*updating installed version to "+currentVersion);
-                            updateLibs = true;
-                            versionFile.delete();
-                        } else {
-                            log.warn("Current version and installed versions do not match! /n   current: "
-                                    +currentVersion + "\n installed: " + installedVersion 
-                                    + "/nrun '"+ name + " -update' to install new version");
-                        }
-                    }
-                } catch (Exception e) {
-                    log.warn("could not determine version: " + e.getMessage());
+        if (libDir.exists()) {
+            File versionFile = new File(libDir, "version.properties");
+            if (!versionFileMatches(versionFile, VERSION_PROPERTIES_PATH)) {
+                String autoUpdate = props.getProperty("cfml.cli.autoupdate");
+                if (autoUpdate != null && Boolean.parseBoolean(autoUpdate)) {
+                    log.warn("\n*updating installed version");
+                    updateLibs = true;
+                    versionFile.delete();
+                } else {
+                    log.warn("run '" + name + " -update' to install new version");
                 }
-            } else {
-                updateLibs = true;
-                log.debug("update set to true -- no version.properties: " + versionFile.getAbsolutePath());
             }
         }
         
@@ -222,7 +209,7 @@ public class LoaderCLIMain {
 			System.out.println("Library path: " + libDir);
 			System.out.println("Initializing libraries -- this will only happen once, and takes a few seconds...");
 			Util.unzipInteralZip(classLoader, LIB_ZIP_PATH, libDir, debug);
-			Util.unzipInteralZip(classLoader, CFML_ZIP_PATH, new File(cli_home.getPath()+"/cfml"), debug);
+			Util.unzipInteralZip(classLoader, CFML_ZIP_PATH, cfmlDir, debug);
 			Util.unzipInteralZip(classLoader, ENGINECONF_ZIP_PATH, new File(cli_home.getPath()+"/engine"), debug);
 			Util.copyInternalFile(classLoader, "resource/trayicon.png", new File(libDir,"trayicon.png"));
             Util.copyInternalFile(classLoader, VERSION_PROPERTIES_PATH, new File(libDir,"version.properties"));
@@ -234,6 +221,20 @@ public class LoaderCLIMain {
 				//System.exit(0);
 			}
 			Util.cleanUpUnpacked(libDir);
+		}
+		// check cfml version
+		if(cfmlDir.exists()) {
+            File versionFile = new File(cfmlDir, ".version");
+            if (!versionFileMatches(versionFile, CFML_VERSION_PATH)) {
+                String autoUpdate = props.getProperty("cfml.cli.autoupdate");
+                if (autoUpdate != null && Boolean.parseBoolean(autoUpdate)) {
+                    log.warn("\n*updating installed CFML");
+                    versionFile.delete();
+                    Util.unzipInteralZip(classLoader, CFML_ZIP_PATH, cfmlDir, debug);
+                } else {
+                    log.warn("run '" + name + " -update' to install new CFML");
+                }
+            }		    
 		}
 		
 		File configServerDir=new File(libDir.getParentFile(),"engine/cfml/server/");
@@ -397,6 +398,30 @@ public class LoaderCLIMain {
         }
         cl.close();
 	}
+
+    
+    static Boolean versionFileMatches(File versionFile, String resourcePath) throws IOException {
+        if(versionFile.exists()){
+            try{
+                String installedVersion = Util.readFile(versionFile.getPath()).trim();
+                String currentVersion = Util.getResourceAsString(resourcePath).trim();
+                if(!installedVersion.equals(currentVersion)){
+                    log.warn("Current version and installed versions do not match! /n  *current: "
+                        +currentVersion + "\n installed: " + installedVersion);
+                    log.debug("versions do not match: " + versionFile.getAbsolutePath()
+                            +"/"+ resourcePath + ":" + installedVersion + " != " + currentVersion);
+                    return false;
+                }
+            } catch (Exception e) {
+                log.warn("could not determine version: " + e.getMessage());
+                return false;
+            }
+        } else {
+            log.debug("update set to true -- no version.properties: " + versionFile.getAbsolutePath());
+            return false;
+        }
+        return true;
+    }
 
     private static String removeBinBash(String uri) throws IOException {
         FileReader namereader = new FileReader(new File(uri));
