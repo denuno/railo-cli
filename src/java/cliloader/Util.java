@@ -13,6 +13,8 @@ import java.util.TimerTask;
 import java.util.jar.*;
 import java.util.zip.GZIPInputStream;
 
+import cliloader.LoaderCLIMain.ExtFilter;
+
 public class Util {
 
 	private static final int KB = 1024;
@@ -50,9 +52,11 @@ public class Util {
 				if (!parentDir.exists()) {
 					parentDir.mkdir();
 				}
-				writeStreamTo(jis, new FileOutputStream(f), 8 * KB);
+				FileOutputStream fileOutStream = new FileOutputStream(f);
+				writeStreamTo(jis, fileOutStream, 8 * KB);
 				if (f.getPath().endsWith("pack.gz")) {
 					unpack(f);
+					fileOutStream.close();
 					f.delete();
 				}
 			}
@@ -63,6 +67,14 @@ public class Util {
 		}
 		task.cancel();
 
+	}
+	
+	public static void cleanUpUnpacked(File libDir) {
+        if(libDir.exists() && libDir.listFiles(new ExtFilter(".gz")).length > 0){
+            for(File gz : libDir.listFiles(new ExtFilter(".gz"))) {
+                try { gz.delete(); } catch (Exception e) {}
+            }
+        }
 	}
 	
 	public static void copyInternalFile(ClassLoader classLoader, String resourcePath, File dest) {

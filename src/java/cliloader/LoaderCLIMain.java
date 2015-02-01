@@ -186,11 +186,7 @@ public class LoaderCLIMain {
 		props.setProperty("cfml.cli.lib", libDir.getAbsolutePath());
 		
 		// clean out any leftover pack files (an issue on windows)
-		if(libDir.exists() && libDir.listFiles(new ExtFilter(".gz")).length > 0){
-			for(File gz : libDir.listFiles(new ExtFilter(".gz"))) {
-				try { gz.delete(); } catch (Exception e) {}
-			}
-		}
+        Util.cleanUpUnpacked(libDir);
 
         if(libDir.exists()){
             File versionFile = new File(libDir,"version.properties");
@@ -203,8 +199,9 @@ public class LoaderCLIMain {
                         if(autoUpdate != null && Boolean.parseBoolean(autoUpdate)) {
                             log.warn("Current version and installed versions do not match! /n   current: "
                                     +currentVersion + "\n installed: " + installedVersion 
-                                    + "\n*updating installed version");
+                                    + "\n*updating installed version to "+currentVersion);
                             updateLibs = true;
+                            versionFile.delete();
                         } else {
                             log.warn("Current version and installed versions do not match! /n   current: "
                                     +currentVersion + "\n installed: " + installedVersion 
@@ -215,7 +212,8 @@ public class LoaderCLIMain {
                     log.warn("could not determine version: " + e.getMessage());
                 }
             } else {
-                log.debug("no version.properties: " + versionFile.getAbsolutePath());
+                updateLibs = true;
+                log.debug("update set to true -- no version.properties: " + versionFile.getAbsolutePath());
             }
         }
         
@@ -231,17 +229,19 @@ public class LoaderCLIMain {
 			System.out.println("");
 			System.out.println("Libraries initialized");
 			if(updateLibs && arguments.length == 0) {
-				System.out.println("updated! ctrl-c now or wait a few seconds for exit..");
-				System.exit(0);
+				System.out.println("updated " + cli_home + "!");
+				//System.out.println("updated! ctrl-c now or wait a few seconds for exit..");
+				//System.exit(0);
 			}
+			Util.cleanUpUnpacked(libDir);
 		}
 		
-		File configServerDir=new File(libDir.getParentFile(),"engine/railo/server/");
-		File configWebDir=new File(libDir.getParentFile(),"engine/railo/server/railo-web/"+getServerName());
+		File configServerDir=new File(libDir.getParentFile(),"engine/cfml/server/");
+		File configWebDir=new File(libDir.getParentFile(),"engine/cfml/server/railo-web/"+getServerName());
 		setRailoConfigServerDir(configServerDir);
         setRailoConfigWebDir(configWebDir);
-		File configCLIServerDir=new File(libDir.getParentFile(),"engine/railo/cli/");
-		File configCLIWebDir=new File(libDir.getParentFile(),"engine/railo/cli/railo-web");
+		File configCLIServerDir=new File(libDir.getParentFile(),"engine/cfml/cli/");
+		File configCLIWebDir=new File(libDir.getParentFile(),"engine/cfml/cli/railo-web");
 		setRailoCLIConfigServerDir(configCLIServerDir);
         setRailoCLIConfigWebDir(configCLIWebDir);
 		props.setProperty("cfml.cli.home", cli_home.getAbsolutePath());
