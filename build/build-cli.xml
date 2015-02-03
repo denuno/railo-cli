@@ -20,6 +20,7 @@
 		 -->
 		<dependency groupId="jline" artifactId="jline" version="2.12" dest="${lib.dir}" type="jar" unzip="false"/>
     <dependency groupId="com.beust" artifactId="jcommander" version="1.47" dest="${lib.dir}" type="jar" unzip="false"/>
+    <dependency groupId="net.minidev" artifactId="json-smart-mini" version="1.0.8" unzip="false" type="jar" dest="${lib.dir}"/>
 	</target>
 
 	<target name="build.cli" description="creates an jar with the libs cli" depends="resolve.libs">
@@ -145,6 +146,7 @@
 			<fileset file="${temp.dir}/cli/cfml.zip" />
 			<fileset file="${temp.dir}/cli/engine.zip" />
 			<fileset dir="${temp.dir}/cli/bin" />
+      <zipfileset src="${lib.dir}/json-smart-mini-1.0.8.jar" includes="**/*.class"/>
       <zipfileset file="${temp.dir}/version" fullpath="version"/>
 		</jar>
  	</target>

@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
+import net.minidev.json.JSONArray;
+
 public class LoaderCLIMain {
 
 	private static String LIB_ZIP_PATH = "libs.zip";
@@ -312,7 +314,12 @@ public class LoaderCLIMain {
         }
 
         System.setProperty("cfml.cli.arguments",arrayToList(cliArguments.toArray(new String[cliArguments.size()])," "));
+        System.setProperty("cfml.cli.argument.list",arrayToList(cliArguments.toArray(new String[cliArguments.size()]),","));
+        JSONArray jsonArray = new JSONArray();
+        jsonArray.addAll(cliArguments);
+        System.setProperty("cfml.cli.argument.array",jsonArray.toJSONString());
         if(debug) System.out.println("cfml.cli.arguments: "+Arrays.toString(cliArguments.toArray()));
+        if(debug) System.out.println("cfml.cli.argument.array: "+jsonArray.toJSONString());
 
         InputStream originalIn = System.in;
         PrintStream originalOut = System.out;
