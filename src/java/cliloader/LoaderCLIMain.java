@@ -48,6 +48,7 @@ public class LoaderCLIMain {
 
 	@SuppressWarnings("static-access")
     public static void main(String[] arguments) throws Throwable {
+	    Util.ensureJavaVersion();
 	    System.setProperty("apple.awt.UIElement","true");
 	    ArrayList<String> cliArguments = new ArrayList<String>(Arrays.asList(arguments));
 	    File cli_home;

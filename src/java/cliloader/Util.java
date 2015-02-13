@@ -13,6 +13,7 @@ import java.util.TimerTask;
 import java.util.jar.*;
 import java.util.zip.GZIPInputStream;
 
+import runwar.Server;
 import cliloader.LoaderCLIMain.ExtFilter;
 
 public class Util {
@@ -192,6 +193,20 @@ public class Util {
     static String readFile(String path, Charset encoding) throws IOException {
         byte[] encoded = Files.readAllBytes(Paths.get(path));
         return new String(encoded, encoding);
+    }
+
+    public static void ensureJavaVersion() {
+        Class<?> nio;
+        try{
+            nio = Server.class.getClassLoader().loadClass("java.nio.charset.StandardCharsets");
+            if(nio == null) {
+                System.out.println("Could not load NIO!  Are we running on Java 7 or greater?  Sorry, exiting...");                
+                System.exit(1);
+            }
+        } catch (java.lang.ClassNotFoundException e) {
+            System.out.println("Could not load NIO!  Are we running on Java 7 or greater?  Sorry, exiting...");
+            System.exit(1);
+        }
     }
     
 }
