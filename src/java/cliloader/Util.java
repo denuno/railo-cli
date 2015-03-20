@@ -13,7 +13,6 @@ import java.util.TimerTask;
 import java.util.jar.*;
 import java.util.zip.GZIPInputStream;
 
-import runwar.Server;
 import cliloader.LoaderCLIMain.ExtFilter;
 
 public class Util {
@@ -198,7 +197,7 @@ public class Util {
     public static void ensureJavaVersion() {
         Class<?> nio;
         try{
-            nio = Server.class.getClassLoader().loadClass("java.nio.charset.StandardCharsets");
+            nio = Util.class.getClassLoader().loadClass("java.nio.charset.StandardCharsets");
             if(nio == null) {
                 System.out.println("Could not load NIO!  Are we running on Java 7 or greater?  Sorry, exiting...");                
                 System.exit(1);

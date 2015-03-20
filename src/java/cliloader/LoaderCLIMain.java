@@ -360,8 +360,9 @@ public class LoaderCLIMain {
             addArgs= new String[] {
                     "-war",webRoot.getPath(),
                     "--server-name",getServerName(),
-                    "--railo-server-config",configServerDir.getAbsolutePath(),
-                    "--railo-web-config",configWebDir.getAbsolutePath(),
+                    "--cfengine-name","railo",
+                    "--cfml-server-config",configServerDir.getAbsolutePath(),
+                    "--cfml-web-config",configWebDir.getAbsolutePath(),
                     "--background","true",
                     "--tray-icon",libDir.getAbsolutePath() + "/trayicon.png",
                     "--lib-dirs",libDir.getPath(),
@@ -372,8 +373,9 @@ public class LoaderCLIMain {
             addArgs= new String[] {
                     "-war",webRoot.getPath(),
                     "--server-name",getServerName(),
-                    "--railo-server-config",configServerDir.getAbsolutePath(),
-                    "--railo-web-config",configWebDir.getAbsolutePath(),
+                    "--cfengine-name","railo",
+                    "--cfml-server-config",configServerDir.getAbsolutePath(),
+                    "--cfml-web-config",configWebDir.getAbsolutePath(),
                     "--tray-icon",libDir.getAbsolutePath() + "/trayicon.png",
                     "--lib-dirs",libDir.getPath(),
                     "--background","false",
