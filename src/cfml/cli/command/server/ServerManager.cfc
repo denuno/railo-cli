@@ -42,7 +42,7 @@ component {
 		var args = "-javaagent:""#libdir#/railo-inst.jar"" -jar ""#jarPath#"""
 				& " -war ""#webroot#"" --background #background# --port #portNumber# --debug #debug#"
 				& " --stop-port #socket# --processname ""#processName#"" --log-dir ""#logdir#"""
-				& " --open-browser #openbrowser# --open-url http://127.0.0.1:#portNumber#"
+				& " --cfengine-name railo --open-browser #openbrowser# --open-url http://127.0.0.1:#portNumber#"
 				& " --lib-dirs ""#variables.libdir#"" --tray-icon ""#variables.libdir#/trayicon.png""";
 		serverInfo.port = portNumber;
 		serverInfo.stopsocket = socket;

@@ -215,6 +215,7 @@ public class LoaderCLIMain {
 			Util.unzipInteralZip(classLoader, CFML_ZIP_PATH, cfmlDir, debug);
 			Util.unzipInteralZip(classLoader, ENGINECONF_ZIP_PATH, new File(cli_home.getPath()+"/engine"), debug);
 			Util.copyInternalFile(classLoader, "resource/trayicon.png", new File(libDir,"trayicon.png"));
+			Util.copyInternalFile(classLoader, "resource/traymenu.json", new File(libDir,"traymenu.json"));
             Util.copyInternalFile(classLoader, VERSION_PROPERTIES_PATH, new File(libDir,"version.properties"));
 			System.out.println("");
 			System.out.println("Libraries initialized");
@@ -365,6 +366,7 @@ public class LoaderCLIMain {
                     "--cfml-web-config",configWebDir.getAbsolutePath(),
                     "--background","true",
                     "--tray-icon",libDir.getAbsolutePath() + "/trayicon.png",
+                    "--tray-config",libDir.getAbsolutePath() + "/traymenu.json",
                     "--lib-dirs",libDir.getPath(),
                     "--debug",Boolean.toString(debug),
                     "--processname",name
@@ -377,6 +379,7 @@ public class LoaderCLIMain {
                     "--cfml-server-config",configServerDir.getAbsolutePath(),
                     "--cfml-web-config",configWebDir.getAbsolutePath(),
                     "--tray-icon",libDir.getAbsolutePath() + "/trayicon.png",
+                    "--tray-config",libDir.getAbsolutePath() + "/traymenu.json",
                     "--lib-dirs",libDir.getPath(),
                     "--background","false",
                     "--debug",Boolean.toString(debug),
