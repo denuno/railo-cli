@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src/java"/>
+	<classpathentry kind="src" path="tests/java"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/runwar"/>
 	<classpathentry kind="lib" path="/Users/valliant/.railo/lib/railo-jar-4.2.1.008.jar"/>
@@ -117,5 +118,6 @@
 	<classpathentry kind="lib" path="/runwar/lib/jboss-servlet-api_3.1_spec-1.0.0.Final.jar"/>
 	<classpathentry kind="lib" path="lib/jcommander-1.47.jar"/>
 	<classpathentry kind="lib" path="lib/json-smart-mini-1.0.8.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

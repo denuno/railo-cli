@@ -37,5 +37,24 @@ public class TestLoader {
 		root = cliLoader.getPathRoot("/");
 		assertTrue(root.equals("/"));
 	}
+	
+	@Test
+	public final void testVersionComparator() {
+		String lowerVersion = "1.2.4";
+		String higherVersion = "1.2.5";
+		VersionComparator versionComparator = new VersionComparator();
+		int result = versionComparator.compare(higherVersion, lowerVersion);
+		assertTrue(result > 0);
+		result = versionComparator.compare(lowerVersion,higherVersion);
+		assertTrue(result < 0);
+		higherVersion = "1.2.1";
+		lowerVersion = "1.2";
+		result = versionComparator.compare(higherVersion, lowerVersion);
+		assertTrue(result > 0);
+		result = versionComparator.compare(higherVersion, higherVersion);
+		assertTrue(result == 0);
+	}
+	
+	
 
 }

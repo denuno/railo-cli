@@ -45,7 +45,7 @@ public class LoaderCLIMain {
     private static URLClassLoader _classLoader;
     private static String CR = System.getProperty("line.separator").toString();
     private static String serverName = "default";
-
+    
 	@SuppressWarnings("static-access")
     public static void main(String[] arguments) throws Throwable {
 	    Util.ensureJavaVersion();
@@ -412,17 +412,17 @@ public class LoaderCLIMain {
         cl.close();
 	}
 
-    
     static Boolean versionFileMatches(File versionFile, String resourcePath) throws IOException {
         if(versionFile.exists()){
             try{
                 String installedVersion = Util.readFile(versionFile.getPath()).trim();
                 String currentVersion = Util.getResourceAsString(resourcePath).trim();
-                if(!installedVersion.equals(currentVersion)){
-                    log.warn("Current version and installed versions do not match! /n  *current: "
+        		VersionComparator versionComparator = new VersionComparator();
+                if(versionComparator.compare(currentVersion, installedVersion) > 0){
+                    log.warn("Current version higher than installed version! /n  *current: "
                         +currentVersion + "\n installed: " + installedVersion);
-                    log.debug("versions do not match: " + versionFile.getAbsolutePath()
-                            +"/"+ resourcePath + ":" + installedVersion + " != " + currentVersion);
+                    log.debug("Current version higher than installed version: " + versionFile.getAbsolutePath()
+                            +"/"+ resourcePath + ":" + installedVersion + " < " + currentVersion);
                     return false;
                 }
             } catch (Exception e) {
