@@ -211,6 +211,7 @@ public class LoaderCLIMain {
 				|| updateLibs) {
 			System.out.println("Library path: " + libDir);
 			System.out.println("Initializing libraries -- this will only happen once, and takes a few seconds...");
+			Util.removePreviousLibs(libDir);
 			Util.unzipInteralZip(classLoader, LIB_ZIP_PATH, libDir, debug);
 			Util.unzipInteralZip(classLoader, CFML_ZIP_PATH, cfmlDir, debug);
 			Util.unzipInteralZip(classLoader, ENGINECONF_ZIP_PATH, new File(cli_home.getPath()+"/engine"), debug);

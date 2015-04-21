@@ -2,6 +2,11 @@ package cliloader;
 
 import static org.junit.Assert.*;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -53,6 +58,23 @@ public class TestLoader {
 		assertTrue(result > 0);
 		result = versionComparator.compare(higherVersion, higherVersion);
 		assertTrue(result == 0);
+	}
+	
+	@Test
+	public final void testRemovePreviousLibs() {
+		try {
+			File libDir = Files.createTempDirectory("lib").toFile();
+			File runwarOld = File.createTempFile("runwar", ".jar", libDir);
+			File runwarOld2 = File.createTempFile("runwar-1", ".jar", libDir);
+			assertTrue(runwarOld.exists());
+			assertTrue(runwarOld2.exists());
+			Util.removePreviousLibs(libDir);
+			assertFalse(runwarOld.exists());
+			assertFalse(runwarOld2.exists());
+			libDir.delete();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	

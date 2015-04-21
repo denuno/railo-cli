@@ -14,6 +14,7 @@ import java.util.jar.*;
 import java.util.zip.GZIPInputStream;
 
 import cliloader.LoaderCLIMain.ExtFilter;
+import cliloader.LoaderCLIMain.PrefixFilter;
 
 public class Util {
 
@@ -75,6 +76,16 @@ public class Util {
                 try { gz.delete(); } catch (Exception e) {}
             }
         }
+	}
+	
+	public static void removePreviousLibs(File libDir) {
+		if(libDir.exists() && libDir.listFiles(new PrefixFilter("runwar")).length > 0){
+			for(File previous : libDir.listFiles(new PrefixFilter("runwar"))) {
+				try { previous.delete(); } catch (Exception e) {
+					System.err.println("Could not delete previous lib: " + previous.getAbsolutePath());
+				}
+			}
+		}
 	}
 	
 	public static void copyInternalFile(ClassLoader classLoader, String resourcePath, File dest) {
